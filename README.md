@@ -1,37 +1,14 @@
-# Hospital Review RAG Chatbot
+---
+title: Rag Assistant
+emoji: 🤖
+colorFrom: blue
+colorTo: indigo
+sdk: gradio
+sdk_version: 4.28.3
+app_file: app.py
+pinned: false
+short_description: Interactive AI assistant powered by RAG technology.
+---
 
-This project is a Retrieval-Augmented Generation (RAG) chatbot for hospital patient reviews. It uses CSV data, FAISS indexing, and (optionally) Google Gemini via LangChain.
-
-## Features
-- CSV loader + FAISS vector store
-- Prompt-based summarization via language model
-- Local fallback when API key or model access is unavailable
-- Gradio UI (`--ui` command switch)
-
-## Setup
-1. Create and activate Python environment
-2. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-3. Create env file(s):
-- `.env` and/or `ke.env`
-
-`ke.env` example:
-```
-GOOGLE_API_KEY=YOUR_ACTUAL_KEY
-```
-
-## Run
-```bash
-python Rag_Char.py "What are the main issues patients mention?"
-```
-
-UI mode:
-```bash
-python Rag_Char.py --ui
-```
-
-## Notes
-- `faiss_index` directory will be generated on first run.
-- `ke.env` overrides `.env`.
+# RAG Assistant Space
+This Space hosts an interactive RAG chatbot built with Gradio and Python.
