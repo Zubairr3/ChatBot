@@ -13,5 +13,5 @@ jobs:
       - uses: huggingface/hub-sync@v0.1.0
         with:
           github_repo_id: ${{ github.repository }}
-          huggingface_repo_id: /MdZubair3/rag-assistant
+          huggingface_repo_id: MdZubair3/rag-assistant
           hf_token: ${{ secrets.HF_TOKEN }}
