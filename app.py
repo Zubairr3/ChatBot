@@ -7,6 +7,19 @@ try:
 except Exception:
     raise SystemExit("Gradio is required. Please install dependencies from requirements.txt")
 
+# Hugging Face Spaces GPU marker (ZeroGPU detection)
+try:
+    import spaces
+
+    @spaces.GPU
+    def _hf_spaces_gpu_marker():
+        # Marker only — presence signals ZeroGPU usage to Spaces.
+        # No-op for local execution or when 'spaces' isn't available.
+        return None
+except Exception:
+    # 'spaces' module not available locally — ignore.
+    pass
+
 from Rag_Char import ask, get_status
 
 
