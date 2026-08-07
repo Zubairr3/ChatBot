@@ -24,6 +24,21 @@ _state = {
     "chat_model": None,
 }
 
+# Add a ZeroGPU-compatible GPU-decorated inference wrapper.
+# Official docs require functions that need GPU to be decorated with @spaces.GPU.
+try:
+    import spaces
+
+    @spaces.GPU
+    def _run_model_on_gpu(model_callable, prompt_text: str) -> str:
+        # model_callable is expected to be a callable that accepts a prompt and returns a string.
+        return model_callable(prompt_text)
+except Exception:
+    # If 'spaces' isn't available (local runs), fall back to direct call.
+    def _run_model_on_gpu(model_callable, prompt_text: str) -> str:
+        return model_callable(prompt_text)
+
+
 def _get_embedding_function():
     try:
         from langchain_huggingface import HuggingFaceEmbeddings
@@ -149,7 +164,11 @@ def ask(question: str) -> str:
             context = _format_docs(docs)
             prompt_text = f"Context:\n{context}\n\nQuestion: {question}"
             try:
-                return chat_model(prompt_text)
+                # Use ZeroGPU-decorated wrapper if a real API key/model is configured
+                if _state.get("google_api_key"):
+                    return _run_model_on_gpu(chat_model, prompt_text)
+                else:
+                    return chat_model(prompt_text)
             except Exception as e:
                 logger.warning("Chat model invocation failed: %s", e)
         except Exception as e:
