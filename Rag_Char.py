@@ -1,7 +1,7 @@
 ﻿import os
-import re
 import pandas as pd
 import logging
+import re
 from langchain_community.document_loaders import DataFrameLoader
 from langchain_community.vectorstores import FAISS
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
@@ -16,16 +16,19 @@ class HospitalReviewBot:
         self.retriever = None
         self.llm = None
         self.prompt = None
+        self.fallback_reason = "Unknown Error"
         self.setup_rag()
 
     def setup_rag(self):
         api_key = os.environ.get("GOOGLE_API_KEY")
         if not api_key:
-            logger.warning("GOOGLE_API_KEY not found in environment variables. Defaulting to local search fallback.")
+            self.fallback_reason = "GOOGLE_API_KEY is missing from the active environment variables."
+            logger.warning(self.fallback_reason)
             return
             
         if not os.path.exists(self.data_path):
-            logger.error(f"Dataset '{self.data_path}' is missing.")
+            self.fallback_reason = f"Dataset '{self.data_path}' is missing from the repository."
+            logger.error(self.fallback_reason)
             return
 
         try:
@@ -35,13 +38,20 @@ class HospitalReviewBot:
             loader = DataFrameLoader(df, page_content_column=text_col)
             documents = loader.load()
 
-            embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
+            # Fix: Using the exact stable model name without the "models/" prefix
+            embeddings = GoogleGenerativeAIEmbeddings(
+                model="gemini-embedding-001",
+                google_api_key=api_key
+            )
             vectorstore = FAISS.from_documents(documents, embeddings)
             self.retriever = vectorstore.as_retriever(search_kwargs={"k": 4})
             
-            self.llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.2)
+            self.llm = ChatGoogleGenerativeAI(
+                model="gemini-1.5-flash", 
+                temperature=0.2,
+                google_api_key=api_key
+            )
 
-            # Enhanced prompt for relevant, structured synthesis
             self.prompt = ChatPromptTemplate.from_template(
                 "You are an expert healthcare review analyst.\n"
                 "Based ONLY on the provided patient reviews below, give a clear, direct, and synthesized answer to the question.\n"
@@ -50,16 +60,18 @@ class HospitalReviewBot:
                 "User Question: {question}\n\n"
                 "Detailed Analysis:"
             )
+            self.fallback_reason = None
             logger.info("Gemini RAG pipeline initialized successfully.")
             
         except Exception as e:
-            logger.error(f"Initialization Error: {e}")
+            self.fallback_reason = f"AI Initialization Crash: {str(e)}"
+            logger.error(self.fallback_reason)
             self.retriever = None
 
     def get_response(self, user_query):
         query_clean = user_query.strip().lower()
 
-        # 1. Intent & Chitchat Interception
+        # Intercept casual chitchat
         if re.fullmatch(r"(hi|hello|hey|hey there|hi there|good morning|good afternoon|good evening|greetings)", query_clean):
             return (
                 "👋 **Hello! Welcome to the Hospital Review Assistant.**\n\n"
@@ -72,12 +84,12 @@ class HospitalReviewBot:
             )
 
         if any(w in query_clean for w in ["thanks", "thank you", "thx", "appreciate it"]):
-            return "😊 You're very welcome! Feel free to ask if you need any more insights about hospital patient reviews."
+            return "😊 You're very welcome! Feel free to ask if you need any more insights."
 
         if any(w in query_clean for w in ["bye", "goodbye", "see you", "cya"]):
             return "👋 Goodbye! Have a great day!"
 
-        # 2. Main RAG Pipeline Execution
+        # Execute RAG Pipeline
         if not self.retriever or not self.llm:
             return self._local_fallback(user_query)
             
@@ -99,11 +111,11 @@ class HospitalReviewBot:
             return answer
         except Exception as e:
             logger.error(f"Inference Error: {e}")
-            return "**System Error:** Unable to process the request at this time."
+            return f"**System Error:** Unable to process the request. Details: {str(e)}"
 
     def _local_fallback(self, query):
         if not os.path.exists(self.data_path):
-            return "**Notice:** Dataset unavailable."
+            return "❌ **Critical Error:** Dataset unavailable."
             
         try:
             df = pd.read_csv(self.data_path)
@@ -114,13 +126,14 @@ class HospitalReviewBot:
                 lambda x: any(k in x for k in keywords)
             )]
             
+            # Print the exact diagnostic error to the UI
+            answer = f"⚠️ **Fallback Mode Active**\n*Diagnostic Reason:* `{self.fallback_reason}`\n\n"
+            
             if matches.empty:
-                return "ℹ️ **No matches found.** Please configure `GOOGLE_API_KEY` in Hugging Face Space Settings for full AI capabilities."
+                answer += "ℹ️ **No matches found.**"
+                return answer
                 
             top_matches = matches.head(3)[text_col].tolist()
-            
-            answer = "⚠️ **Fallback Mode (API Key Not Activated):**\n"
-            answer += "To enable full AI synthesis and automated summaries, add your `GOOGLE_API_KEY` under Space Settings.\n\n"
             answer += "**Matching Reviews Found in Dataset:**\n"
             for idx, rec in enumerate(top_matches):
                 answer += f"{idx+1}. *\"{rec}\"*\n\n"
