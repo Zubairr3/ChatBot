@@ -18,121 +18,129 @@ def generate_response(user_message, history):
     return "", history
 
 # -----------------------------------------------------
-# Muted Sage & Warm Stone Executive CSS
+# Clean Developer Tool / GitHub Dark Theme CSS
 # -----------------------------------------------------
 custom_css = """
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&display=swap');
-
 body, .gradio-container {
-    background-color: #1c1917 !important; /* Warm Dark Stone Background */
-    font-family: 'Plus Jakarta Sans', sans-serif !important;
-    color: #f5f5f4 !important;
+    background-color: #0d1117 !important; /* GitHub Dark Base */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif !important;
+    color: #c9d1d9 !important;
+    max-width: 900px !important;
+    margin: 0 auto !important;
 }
 
-/* Executive Header Panel */
+/* Developer Header Bar */
 .header-panel {
-    background: #292524 !important;
-    border: 1px solid #44403c !important;
-    border-radius: 14px !important;
-    padding: 22px !important;
-    margin-bottom: 16px !important;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
-}
-
-.header-title {
-    color: #e7e5e4 !important;
-    font-size: 2rem !important;
-    font-weight: 600 !important;
-    margin: 0 0 4px 0 !important;
-}
-
-/* Chatbot Area */
-.chatbot-area {
-    background: #1c1917 !important;
-    border: 1px solid #44403c !important;
-    border-radius: 14px !important;
-    min-height: 60vh !important;
+    background: #161b22 !important;
+    border: 1px solid #30363d !important;
+    border-radius: 6px !important;
+    padding: 16px 20px !important;
     margin-bottom: 12px !important;
 }
 
-/* Message Bubbles - Muted Sage & Neutral Stone */
+.header-title {
+    color: #f0f6fc !important;
+    font-size: 1.25rem !important;
+    font-weight: 600 !important;
+    margin: 0 !important;
+}
+
+/* Accordion Info Box */
+.gr-accordion {
+    background-color: #161b22 !important;
+    border: 1px solid #30363d !important;
+    border-radius: 6px !important;
+}
+
+/* Chatbot Container */
+.chatbot-area {
+    background: #0d1117 !important;
+    border: 1px solid #30363d !important;
+    border-radius: 6px !important;
+    min-height: 55vh !important;
+    margin-bottom: 12px !important;
+}
+
+/* Message Bubbles */
 .message.user {
-    background: #4a6b5d !important; /* Muted Sage Green */
+    background: #1f6feb !important; /* GitHub Signature Blue */
     color: #ffffff !important;
+    border-radius: 6px !important;
     border: none !important;
 }
 .message.bot {
-    background: #292524 !important;
-    color: #e7e5e4 !important;
-    border: 1px solid #44403c !important;
+    background: #21262d !important; /* GitHub Surface Dark */
+    color: #c9d1d9 !important;
+    border: 1px solid #30363d !important;
+    border-radius: 6px !important;
 }
 
-/* Explicit Send Button */
+/* Action Button */
 .send-btn {
-    background: #588157 !important; /* Elegant Muted Sage */
-    border: none !important;
+    background: #238636 !important; /* GitHub Signature Green */
+    border: 1px solid rgba(240,246,252,0.1) !important;
     color: white !important;
-    font-weight: 600 !important;
-    font-size: 1rem !important;
-    border-radius: 10px !important;
-    transition: background 0.2s ease !important;
+    font-weight: 500 !important;
+    font-size: 0.95rem !important;
+    border-radius: 6px !important;
     cursor: pointer !important;
 }
 .send-btn:hover {
-    background: #3a5a40 !important;
+    background: #2ea043 !important;
 }
 
-/* Clean Textbox */
+/* Input Field */
 .input-box {
-    border-radius: 10px !important;
-    border: 1px solid #57534e !important;
-    background: #292524 !important;
+    background: #0d1117 !important;
+    border: 1px solid #30363d !important;
+    border-radius: 6px !important;
 }
 .input-box textarea {
-    color: #f5f5f4 !important;
-    font-size: 1rem !important;
+    color: #c9d1d9 !important;
+    font-size: 0.95rem !important;
 }
 """
 
 theme = gr.themes.Monochrome(
-    primary_hue="stone",
-    neutral_hue="stone"
+    primary_hue="slate",
+    neutral_hue="slate"
 ).set(
     block_background_fill="transparent",
     block_border_color="transparent"
 )
 
 with gr.Blocks(css=custom_css, theme=theme, title="Hospital Review Bot") as demo:
-    # 1. Custom Header
+    # 1. Clean Minimalist Navbar Header
     with gr.Column(elem_classes="header-panel"):
         gr.HTML("""
-            <h1 class='header-title'>🏥 Hospital Review Bot</h1>
-            <p style='color:#a8a29e; margin:0; font-size:1rem;'>Patient Feedback Intelligence System</p>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h1 class='header-title'>🏥 hospital-review-bot <span style="color: #8b949e; font-weight: 400; font-size: 0.9rem;">/ main</span></h1>
+                <span style="font-size: 0.85rem; background: #21262d; border: 1px solid #30363d; padding: 3px 8px; border-radius: 12px; color: #8b949e;">v1.0.0</span>
+            </div>
         """)
         
-        with gr.Accordion("✨ Click here to know about this ChatBot", open=False):
+        with gr.Accordion("ℹ️ System Architecture & Dataset Context", open=False):
             gr.Markdown("""
-            **What is this bot trained on?**  
-            This AI system indexes real patient feedback records to provide structured summaries on:
-            *   **Wait Times:** Diagnostics, ER responsiveness, and appointments.
-            *   **Medical Care:** Doctor expertise, nursing staff, and treatment quality.
-            *   **Facilities:** Cleanliness, room comfort, and billing clarity.
+            **Trained Dataset Schema & RAG Parameters:**
+            *   **Data Source:** Indexed patient review logs (`reviews.csv`).
+            *   **Embeddings Model:** Google Gemini (`gemini-embedding-001`) via FAISS Vector Store.
+            *   **Evaluated Domains:** Wait times, medical/nursing care quality, facility hygiene, and billing transparency.
             """)
 
-    # 2. The Chat Display
+    # 2. Chat Feed
     chat_history = gr.Chatbot(type="messages", elem_classes="chatbot-area", show_label=False)
     
-    # 3. Manual Input Row with Explicit Button
+    # 3. Input Controls
     with gr.Row():
         user_input = gr.Textbox(
-            placeholder="Type any questions here in space to ask...",
+            placeholder="Ask a query regarding patient feedback...",
             show_label=False,
             scale=8,
             elem_classes="input-box"
         )
-        send_btn = gr.Button("Send ➔", elem_classes="send-btn", scale=2)
+        send_btn = gr.Button("Submit", elem_classes="send-btn", scale=2)
 
-    # 4. Interactive Examples
+    # 4. Quick Prompts
     gr.Examples(
         examples=[
             "What do patients say about wait times for tests?",
@@ -142,7 +150,7 @@ with gr.Blocks(css=custom_css, theme=theme, title="Hospital Review Bot") as demo
         inputs=user_input
     )
 
-    # 5. Wire up the logic
+    # 5. Handlers
     send_btn.click(
         fn=generate_response, 
         inputs=[user_input, chat_history], 
