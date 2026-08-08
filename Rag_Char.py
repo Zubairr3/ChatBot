@@ -1,4 +1,4 @@
-import os
+﻿import os
 import pandas as pd
 import logging
 from langchain_community.document_loaders import DataFrameLoader
@@ -33,7 +33,8 @@ class HospitalReviewBot:
             loader = DataFrameLoader(df, page_content_column=text_col)
             documents = loader.load()
 
-            embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+            # Updated to current standard Google embedding model
+            embeddings = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
             vectorstore = FAISS.from_documents(documents, embeddings)
             self.retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
             
