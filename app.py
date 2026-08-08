@@ -64,7 +64,7 @@ custom_css = """
 
 theme = gr.themes.Soft(primary_hue="indigo", secondary_hue="teal")
 
-with gr.Blocks(theme=theme) as demo:
+with gr.Blocks(theme=theme, css=custom_css) as demo:
     gr.HTML('''
     <div class="hero-banner">
         <h1>🏥 Hospital Review Bot</h1>
@@ -88,4 +88,4 @@ with gr.Blocks(theme=theme) as demo:
     submit_btn.click(chat_interface, [msg, chatbot], [msg, chatbot])
 
 if __name__ == "__main__":
-    demo.launch(css=custom_css)
+    demo.launch()
