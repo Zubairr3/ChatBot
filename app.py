@@ -76,16 +76,8 @@ with gr.Blocks(theme=theme, css=custom_css) as demo:
         msg = gr.Textbox(placeholder="Type your question about hospital reviews here...", scale=4, show_label=False)
         submit_btn = gr.Button("Send", variant="primary", scale=1)
 
-    gr.Examples(
-        examples=[
-            "What are patients saying about the emergency room wait times?",
-            "Summarize the feedback regarding Dr. Smith's bedside manner."
-        ],
-        inputs=msg
-    )
-
     msg.submit(chat_interface, [msg, chatbot], [msg, chatbot])
     submit_btn.click(chat_interface, [msg, chatbot], [msg, chatbot])
 
 if __name__ == "__main__":
-    demo.launch()
+    demo.launch(share=True)
