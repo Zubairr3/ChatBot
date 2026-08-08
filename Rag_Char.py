@@ -2,7 +2,7 @@
 import pandas as pd
 from langchain_community.document_loaders import DataFrameLoader
 from langchain_community.vectorstores import FAISS
-from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
 from langchain.chains import RetrievalQA
 import logging
 
@@ -16,12 +16,12 @@ class HospitalReviewBot:
         self.setup_rag()
 
     def setup_rag(self):
-        openai_key = os.environ.get("OPENAI_API_KEY")
-
-        if not openai_key:
-            logger.warning("OPENAI_API_KEY not found. System will default to local fallback retrieval.")
+        google_api_key = os.environ.get("GOOGLE_API_KEY")
+        
+        if not google_api_key:
+            logger.warning("GOOGLE_API_KEY not found. Defaulting to local fallback.")
             return
-
+            
         if not os.path.exists(self.data_path):
             logger.error(f"Dataset '{self.data_path}' is missing.")
             return
@@ -33,38 +33,47 @@ class HospitalReviewBot:
             loader = DataFrameLoader(df, page_content_column=text_col)
             documents = loader.load()
 
-            embeddings = OpenAIEmbeddings(openai_api_key=openai_key)
+            # Initialize Gemini Embeddings
+            embeddings = GoogleGenerativeAIEmbeddings(
+                model="models/embedding-001", 
+                google_api_key=google_api_key
+            )
             vectorstore = FAISS.from_documents(documents, embeddings)
-
-            llm = ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo", openai_api_key=openai_key)
+            
+            # Initialize Gemini Chat Model
+            llm = ChatGoogleGenerativeAI(
+                model="gemini-1.5-flash", 
+                temperature=0, 
+                google_api_key=google_api_key
+            )
 
             self.qa_chain = RetrievalQA.from_chain_type(
-                llm=llm,
+                llm=llm, 
                 chain_type="stuff",
                 retriever=vectorstore.as_retriever(search_kwargs={"k": 3}),
                 return_source_documents=True
             )
-            logger.info("Production RAG pipeline initialized successfully.")
+            logger.info("Gemini RAG pipeline initialized.")
             
         except Exception as e:
-            logger.error(f"RAG Initialization Error: {e}")
+            logger.error(f"Initialization Error: {e}")
             self.qa_chain = None
 
     def get_response(self, user_query):
         if not self.qa_chain:
             return self._local_fallback(user_query)
-
+            
         try:
             response = self.qa_chain.invoke({"query": user_query})
-            answer = response.get("result", "I couldn't find relevant information for that query.")
-
+            answer = response.get("result", "I couldn't find relevant information.")
+            
             source_docs = response.get("source_documents", [])
             if source_docs:
                 answer += "\n\n### **Source Citations:**\n"
                 for idx, doc in enumerate(source_docs):
                     snippet = doc.page_content[:100].replace("\n", " ").strip()
                     answer += f"* **Source {idx+1}:** \"{snippet}...\"\n"
-
+                    
             return answer
         except Exception as e:
             logger.error(f"Inference Error: {e}")
@@ -72,22 +81,20 @@ class HospitalReviewBot:
 
     def _local_fallback(self, query):
         if not os.path.exists(self.data_path):
-            return "**Notice:** System is operating offline and local data is unavailable."
-
+            return "**Notice:** Local data unavailable."
+            
         try:
             df = pd.read_csv(self.data_path)
             text_col = "review" if "review" in df.columns else df.columns[0]
-            
             keywords = query.lower().split()
             matches = df[df[text_col].astype(str).str.lower().apply(lambda x: any(k in x for k in keywords))]
-
+            
             if matches.empty:
-                return "**Fallback Mode:** No API key provided, and local keyword search yielded no relevant reviews."
-
-            answer = "**Fallback Mode (API Key Missing):** Displaying top local keyword match.\n\n"
+                return "**Fallback Mode:** No API key provided; local search yielded no results."
+                
+            answer = "**Fallback Mode (API Key Missing):** Displaying top local match.\n\n"
             answer += f"**Matched Record:** {matches.iloc[0][text_col]}\n"
             return answer
             
         except Exception as e:
-            logger.error(f"Fallback Search Error: {e}")
-            return "**Notice:** System operating offline. Could not complete local retrieval."
+            return "**Notice:** Could not complete local retrieval."
