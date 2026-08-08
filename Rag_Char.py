@@ -33,19 +33,16 @@ class HospitalReviewBot:
             loader = DataFrameLoader(df, page_content_column=text_col)
             documents = loader.load()
 
-            # Initialize Gemini Embeddings
             embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
             vectorstore = FAISS.from_documents(documents, embeddings)
             self.retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
             
-            # Initialize Gemini Chat Model
             self.llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0)
 
-            # Modern LangChain Core Architecture (Immune to chains deprecation)
             self.prompt = ChatPromptTemplate.from_template(
                 "Answer the following question based only on the provided context:\n\n<context>\n{context}\n</context>\n\nQuestion: {question}"
             )
-            logger.info("Gemini RAG pipeline initialized using native LCEL.")
+            logger.info("Gemini RAG pipeline initialized successfully.")
             
         except Exception as e:
             logger.error(f"Initialization Error: {e}")
@@ -56,20 +53,14 @@ class HospitalReviewBot:
             return self._local_fallback(user_query)
             
         try:
-            # 1. Retrieve relevant documents
             source_docs = self.retriever.invoke(user_query)
-            
-            # 2. Format the context for the LLM
             context = "\n\n".join(doc.page_content for doc in source_docs)
             
-            # 3. Create the execution chain and invoke
             chain = self.prompt | self.llm
             response = chain.invoke({"context": context, "question": user_query})
             
-            # 4. Extract text safely
             answer = response.content if hasattr(response, "content") else str(response)
             
-            # 5. Append Citations
             if source_docs:
                 answer += "\n\n### **Source Citations:**\n"
                 for idx, doc in enumerate(source_docs):
