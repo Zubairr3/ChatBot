@@ -33,7 +33,7 @@ class HospitalReviewBot:
             loader = DataFrameLoader(df, page_content_column=text_col)
             documents = loader.load()
 
-            embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-004")
+            embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
             vectorstore = FAISS.from_documents(documents, embeddings)
             self.retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
             
