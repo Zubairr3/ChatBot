@@ -3,7 +3,9 @@ import pandas as pd
 from langchain_community.document_loaders import DataFrameLoader
 from langchain_community.vectorstores import FAISS
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
-from langchain.chains import RetrievalQA
+from langchain.chains import create_retrieval_chain
+from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain_core.prompts import ChatPromptTemplate
 import logging
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -47,13 +49,16 @@ class HospitalReviewBot:
                 google_api_key=google_api_key
             )
 
-            self.qa_chain = RetrievalQA.from_chain_type(
-                llm=llm, 
-                chain_type="stuff",
-                retriever=vectorstore.as_retriever(search_kwargs={"k": 3}),
-                return_source_documents=True
+            # Modern LangChain Architecture (v0.2+ compatible)
+            prompt = ChatPromptTemplate.from_template(
+                "Answer the following question based only on the provided context:\n\n<context>\n{context}\n</context>\n\nQuestion: {input}"
             )
-            logger.info("Gemini RAG pipeline initialized.")
+            
+            document_chain = create_stuff_documents_chain(llm, prompt)
+            retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
+            
+            self.qa_chain = create_retrieval_chain(retriever, document_chain)
+            logger.info("Gemini RAG pipeline initialized using modern chains.")
             
         except Exception as e:
             logger.error(f"Initialization Error: {e}")
@@ -64,10 +69,12 @@ class HospitalReviewBot:
             return self._local_fallback(user_query)
             
         try:
-            response = self.qa_chain.invoke({"query": user_query})
-            answer = response.get("result", "I couldn't find relevant information.")
+            # The invoke key changes from "query" to "input" in modern chains
+            response = self.qa_chain.invoke({"input": user_query})
+            answer = response.get("answer", "I couldn't find relevant information.")
             
-            source_docs = response.get("source_documents", [])
+            # The context key changes from "source_documents" to "context"
+            source_docs = response.get("context", [])
             if source_docs:
                 answer += "\n\n### **Source Citations:**\n"
                 for idx, doc in enumerate(source_docs):
