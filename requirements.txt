@@ -7,3 +7,4 @@ langchain-google-genai>=2.0.0
 faiss-cpu>=1.7.4
 pandas>=2.0.0
 python-dotenv>=1.0.0
+spaces

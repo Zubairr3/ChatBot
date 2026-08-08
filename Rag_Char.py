@@ -33,8 +33,8 @@ class HospitalReviewBot:
             loader = DataFrameLoader(df, page_content_column=text_col)
             documents = loader.load()
 
-            # Using the active Google embedding model endpoint
-            embeddings = GoogleGenerativeAIEmbeddings(model="gemini-embedding-001")
+            # Using the official active Google embedding model to prevent 404s
+            embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
             vectorstore = FAISS.from_documents(documents, embeddings)
             self.retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
             
