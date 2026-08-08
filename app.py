@@ -148,7 +148,7 @@ with gr.Blocks(css=custom_css, theme=theme, title="Hospital Review Bot") as demo
         </div>
         """)
 
-    # 3. Chat Interface with explicit Send Button
+    # 3. Chat Interface (Fixed Gradio 5 parameters)
     gr.ChatInterface(
         fn=chat_interface,
         type="messages",
@@ -162,10 +162,6 @@ with gr.Blocks(css=custom_css, theme=theme, title="Hospital Review Bot") as demo
             container=False, 
             scale=7
         ),
-        submit_btn="Send ➔",       # Explicitly adds the Send Button
-        retry_btn=None,            # Cleans up UI by hiding unused buttons
-        undo_btn=None,
-        clear_btn="Clear Chat",
         examples=[
             "What do patients say about wait times for tests?",
             "How do patients rate the medical care?",
