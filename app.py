@@ -110,37 +110,47 @@ theme = gr.themes.Monochrome(
 )
 
 with gr.Blocks(css=custom_css, theme=theme, title="Hospital Review Bot") as demo:
-    # 1. Clean Minimalist Navbar Header
+    # 1. Clean, Graphic Navbar Header (No /main, Professional Look)
     with gr.Column(elem_classes="header-panel"):
         gr.HTML("""
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h1 class='header-title'>🏥 hospital-review-bot <span style="color: #8b949e; font-weight: 400; font-size: 0.9rem;">/ main</span></h1>
-                <span style="font-size: 0.85rem; background: #21262d; border: 1px solid #30363d; padding: 3px 8px; border-radius: 12px; color: #8b949e;">v1.0.0</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.5rem;">🏥</span>
+                    <h1 class='header-title'>Hospital Review Bot</h1>
+                </div>
+                <span style="font-size: 0.8rem; background: #21262d; border: 1px solid #30363d; padding: 4px 10px; border-radius: 20px; color: #8b949e; display: inline-flex; align-items: center; gap: 6px;">
+                    <span style="width: 8px; height: 8px; background: #238636; border-radius: 50%; display: inline-block;"></span> Online & Ready
+                </span>
             </div>
         """)
         
-        with gr.Accordion("ℹ️ System Architecture & Dataset Context", open=False):
+        # 2. Non-IT Friendly Information Accordion
+        with gr.Accordion("💡 Click here to know about this ChatBot", open=False):
             gr.Markdown("""
-            **Trained Dataset Schema & RAG Parameters:**
-            *   **Data Source:** Indexed patient review logs (`reviews.csv`).
-            *   **Embeddings Model:** Google Gemini (`gemini-embedding-001`) via FAISS Vector Store.
-            *   **Evaluated Domains:** Wait times, medical/nursing care quality, facility hygiene, and billing transparency.
+            ### 👋 Welcome! What is this bot trained on?
+            This AI assistant is trained entirely on **real hospital patient reviews and feedback data**. 
+            
+            Instead of reading through hundreds of individual comments manually, you can simply ask this bot a question, and it will instantly read the patient feedback to summarize the answers for you regarding:
+            * ⏱️ **Wait Times:** How long patients wait for appointments, tests, or emergency room care.
+            * 🩺 **Medical & Nursing Care:** The quality of treatment, doctor expertise, and staff attentiveness.
+            * 🧼 **Hospital Cleanliness & Facilities:** Room comfort, hygiene, and overall environment.
+            * 💳 **Billing & Support:** Administrative clarity and hospital support.
             """)
 
-    # 2. Chat Feed
+    # 3. Chat Feed
     chat_history = gr.Chatbot(type="messages", elem_classes="chatbot-area", show_label=False)
     
-    # 3. Input Controls
+    # 4. Input Controls
     with gr.Row():
         user_input = gr.Textbox(
-            placeholder="Ask a query regarding patient feedback...",
+            placeholder="Type any questions here in space to ask...",
             show_label=False,
             scale=8,
             elem_classes="input-box"
         )
         send_btn = gr.Button("Submit", elem_classes="send-btn", scale=2)
 
-    # 4. Quick Prompts
+    # 5. Quick Prompts
     gr.Examples(
         examples=[
             "What do patients say about wait times for tests?",
@@ -150,7 +160,7 @@ with gr.Blocks(css=custom_css, theme=theme, title="Hospital Review Bot") as demo
         inputs=user_input
     )
 
-    # 5. Handlers
+    # 6. Handlers
     send_btn.click(
         fn=generate_response, 
         inputs=[user_input, chat_history], 
