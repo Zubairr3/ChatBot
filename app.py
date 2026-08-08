@@ -1,3 +1,32 @@
+import sys
+import os
+
+# Patch huggingface_hub to add missing HfFolder for Gradio compatibility
+try:
+    from huggingface_hub import _login
+except ImportError:
+    pass
+
+# Monkey-patch HfFolder if it doesn't exist
+import huggingface_hub
+if not hasattr(huggingface_hub, 'HfFolder'):
+    class HfFolder:
+        path_token = os.path.expanduser("~/.huggingface")
+        
+        @classmethod
+        def save_token(cls, token):
+            pass
+        
+        @classmethod
+        def get_token(cls):
+            return os.environ.get("HF_TOKEN", None)
+        
+        @classmethod
+        def delete_token(cls):
+            pass
+    
+    huggingface_hub.HfFolder = HfFolder
+
 import gradio as gr
 from Rag_Char import HospitalReviewBot
 
