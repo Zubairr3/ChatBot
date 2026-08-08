@@ -1,22 +1,12 @@
-# Python
 __pycache__/
 *.py[cod]
-*.pyo
-*.pyd
-*.env
-ke.env
-*.sqlite3
-*.db
-
-# OS
+*$py.class
+.env
+.venv
+env/
+venv/
+ENV/
 .DS_Store
-Thumbs.db
-
-# VS Code
-.vscode/
-
-# FAISS index
-faiss_index/
-
-# temp
 *.log
+chroma_db/
+faiss_index/
