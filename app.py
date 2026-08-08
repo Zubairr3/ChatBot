@@ -15,7 +15,7 @@ custom_css = """
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
 body, .gradio-container {
-    background-color: #09090b !important; /* Pitch dark, clean background */
+    background-color: #09090b !important;
     font-family: 'Inter', sans-serif !important;
     color: #f4f4f5 !important;
 }
@@ -62,12 +62,12 @@ body, .gradio-container {
 }
 
 .info-content strong {
-    color: #818cf8 !important; /* Subtle indigo highlight */
+    color: #818cf8 !important;
 }
 
 /* Chat Area */
 .chatbot-area {
-    min-height: 65vh !important; /* Responsive height */
+    min-height: 65vh !important;
     border: 1px solid #3f3f46 !important;
     border-radius: 12px !important;
     background-color: #09090b !important;
@@ -75,7 +75,7 @@ body, .gradio-container {
 
 /* User Message Bubble */
 .message.user {
-    background-color: #3730a3 !important; /* Professional Deep Indigo */
+    background-color: #3730a3 !important;
     color: #ffffff !important;
     border: none !important;
 }
@@ -89,15 +89,28 @@ body, .gradio-container {
 }
 .message.bot p { color: #f4f4f5 !important; }
 
-/* FIX: Clearly visible Input Box */
+/* Input Box Styling */
 .gradio-textbox {
     background-color: #18181b !important;
-    border: 1px solid #52525b !important; /* Lighter border so it stands out */
+    border: 1px solid #52525b !important;
     border-radius: 8px !important;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
 }
 .gradio-textbox textarea {
     color: #f4f4f5 !important;
+}
+
+/* Send Button Styling */
+button.primary {
+    background: linear-gradient(90deg, #4f46e5 0%, #3730a3 100%) !important;
+    border: none !important;
+    color: white !important;
+    font-weight: 600 !important;
+    border-radius: 8px !important;
+    transition: all 0.2s ease-in-out !important;
+}
+button.primary:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4) !important;
 }
 """
 
@@ -135,20 +148,24 @@ with gr.Blocks(css=custom_css, theme=theme, title="Hospital Review Bot") as demo
         </div>
         """)
 
-    # 3. Chat Interface with BUG FIX applied
+    # 3. Chat Interface with explicit Send Button
     gr.ChatInterface(
         fn=chat_interface,
         type="messages",
         chatbot=gr.Chatbot(
             height="65vh",
             elem_classes="chatbot-area",
-            type="messages" # <-- THIS FIXES THE CRASH
+            type="messages"
         ),
         textbox=gr.Textbox(
             placeholder="Type any questions here in space to ask...", 
             container=False, 
             scale=7
         ),
+        submit_btn="Send ➔",       # Explicitly adds the Send Button
+        retry_btn=None,            # Cleans up UI by hiding unused buttons
+        undo_btn=None,
+        clear_btn="Clear Chat",
         examples=[
             "What do patients say about wait times for tests?",
             "How do patients rate the medical care?",

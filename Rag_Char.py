@@ -46,23 +46,23 @@ class HospitalReviewBot:
                 google_api_key=api_key
             )
             vectorstore = FAISS.from_documents(documents, embeddings)
-            self.retriever = vectorstore.as_retriever(search_kwargs={"k": 4})
+            self.retriever = vectorstore.as_retriever(search_kwargs={"k": 5}) # Increased context
             
-            # 3. Setup Large Language Model (LLM)
+            # 3. Setup LLM
             self.llm = ChatGoogleGenerativeAI(
                 model="gemini-1.5-flash", 
-                temperature=0.2,
+                temperature=0.3, # Slightly higher temperature for better natural synthesis
                 google_api_key=api_key
             )
 
-            # 4. Configure Prompt Architecture
+            # 4. Strict Summarization Prompt (Senior-Level Prompt Engineering)
             self.prompt = ChatPromptTemplate.from_template(
-                "You are an expert healthcare review analyst.\n"
-                "Based ONLY on the provided patient reviews below, give a clear, direct, and synthesized answer to the question.\n"
-                "Highlight key trends, patient sentiment, and specific details mentioned in the reviews.\n\n"
-                "Context (Patient Reviews):\n{context}\n\n"
+                "You are an expert Hospital Administrator and Data Analyst.\n"
+                "Your task is to SUMMARIZE the provided patient reviews into a cohesive, professional overview.\n"
+                "CRITICAL INSTRUCTION: DO NOT just copy, paste, or list the exact reviews. You must synthesize the overall sentiment, extract key trends, and present a generalized summary of what patients are experiencing.\n\n"
+                "Context (Raw Patient Reviews):\n{context}\n\n"
                 "User Question: {question}\n\n"
-                "Detailed Analysis:"
+                "Executive Summary:"
             )
             logger.info("Gemini RAG pipeline initialized successfully.")
             
@@ -71,9 +71,9 @@ class HospitalReviewBot:
             self.retriever = None
 
     def get_response(self, user_query: Union[str, Dict]) -> str:
-        """Processes the user query and returns a synthesized AI response or polite fallback."""
+        """Processes the user query and returns a synthesized AI response."""
         
-        # Robust Input Sanitization (Protects against Gradio 5 Dict payloads)
+        # Robust Input Sanitization
         if isinstance(user_query, dict):
             user_query = user_query.get("text", "")
         elif not isinstance(user_query, str):
@@ -81,27 +81,27 @@ class HospitalReviewBot:
             
         query_clean = user_query.strip().lower()
 
-        # 1. Polite Chitchat & Intent Detection
+        # Polite Chitchat & Intent Detection
         if re.fullmatch(r"(hi|hello|hey|hey there|hi there|good morning|good afternoon|good evening|greetings)", query_clean):
             return (
                 "👋 **Hello! Welcome to the Hospital Review Assistant.**\n\n"
-                "I am an AI assistant trained to analyze patient feedback regarding **wait times, medical care quality, staff behavior, cleanliness, and billing**.\n\n"
+                "I am an AI assistant trained to analyze and summarize patient feedback regarding **wait times, medical care quality, staff behavior, cleanliness, and billing**.\n\n"
                 "💡 **Try asking me:**\n"
                 "* *'How do patients rate the medical care?'*\n"
-                "* *'What are the main complaints regarding test wait times?'*"
+                "* *'Summarize the general feedback regarding hospital cleanliness.'*"
             )
 
         if any(w in query_clean for w in ["thanks", "thank you", "thx", "appreciate it"]):
-            return "😊 You're very welcome! Feel free to ask if you need any more insights."
+            return "😊 You're very welcome! Feel free to ask if you need any more synthesized insights."
 
         if any(w in query_clean for w in ["bye", "goodbye", "see you", "cya"]):
             return "👋 Goodbye! Have a great day!"
 
-        # 2. Check if RAG is successfully loaded
+        # Check if RAG is successfully loaded
         if not self.retriever or not self.llm:
             return self._local_fallback(user_query)
             
-        # 3. Execute AI RAG Pipeline
+        # Execute AI RAG Pipeline
         try:
             source_docs = self.retriever.invoke(user_query)
             context = "\n\n".join(doc.page_content for doc in source_docs)
@@ -110,22 +110,14 @@ class HospitalReviewBot:
             response = chain.invoke({"context": context, "question": user_query})
             
             answer = response.content if hasattr(response, "content") else str(response)
-            
-            # Format Citations cleanly
-            if source_docs:
-                answer += "\n\n---\n### 📑 **Referenced Patient Reviews:**\n"
-                for idx, doc in enumerate(source_docs):
-                    snippet = doc.page_content.replace("\n", " ").strip()
-                    answer += f"* **Review {idx+1}:** \"{snippet}\"\n"
-                    
             return answer
             
         except Exception as e:
             logger.error(f"Inference Error: {str(e)}")
-            return "I am currently experiencing high traffic or a temporary API limitation. Information is not available at this exact moment, but please try asking a similar question shortly!"
+            return self._local_fallback(user_query)
 
     def _local_fallback(self, query: str) -> str:
-        """Executes a local keyword search when the API is unavailable."""
+        """Fallback mode: explicitly avoids dumping raw CSV data."""
         if not os.path.exists(self.data_path):
             return "I'm sorry, but the dataset is currently unavailable."
             
@@ -133,7 +125,6 @@ class HospitalReviewBot:
             df = pd.read_csv(self.data_path)
             text_col = "review" if "review" in df.columns else df.columns[0]
             
-            # Extract meaningful keywords (length > 3)
             keywords = [w for w in query.lower().split() if len(w) > 3]
             
             if not keywords:
@@ -143,16 +134,11 @@ class HospitalReviewBot:
                 lambda x: any(k in x for k in keywords)
             )]
             
+            # Senior UX choice: Do not dump raw data. Give a status update instead.
             if matches.empty:
-                return "I couldn't find any specific information related to your request. Could you please try asking a similar question regarding wait times, staff, or facilities?"
+                return "I searched the database but couldn't find any specific information related to your request. Could you try asking about wait times or medical care?"
                 
-            top_matches = matches.head(3)[text_col].tolist()
-            answer = "I am currently experiencing heavy API traffic, but here is some related feedback I found for you:\n\n"
-            for idx, rec in enumerate(top_matches):
-                clean_rec = rec.replace('\n', ' ').strip()
-                answer += f"🔹 *\"{clean_rec}\"*\n\n"
-                
-            return answer
+            return f"⚠️ **API Traffic Alert:** I am currently experiencing high traffic and cannot generate a full AI summary right now. However, I did find **{len(matches)} patient reviews** discussing your topic in the database. Please wait a moment and try your question again for a full synthesis!"
             
         except Exception as e:
             logger.error(f"Fallback Error: {str(e)}")
