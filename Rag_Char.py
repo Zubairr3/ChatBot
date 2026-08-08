@@ -19,8 +19,9 @@ class HospitalReviewBot:
         self.setup_rag()
 
     def setup_rag(self):
-        if not os.environ.get("GOOGLE_API_KEY"):
-            logger.warning("GOOGLE_API_KEY not found. Defaulting to local fallback.")
+        api_key = os.environ.get("GOOGLE_API_KEY")
+        if not api_key:
+            logger.warning("GOOGLE_API_KEY not found in environment variables. Defaulting to local search fallback.")
             return
             
         if not os.path.exists(self.data_path):
@@ -36,12 +37,18 @@ class HospitalReviewBot:
 
             embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
             vectorstore = FAISS.from_documents(documents, embeddings)
-            self.retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
+            self.retriever = vectorstore.as_retriever(search_kwargs={"k": 4})
             
-            self.llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0)
+            self.llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.2)
 
+            # Enhanced prompt for relevant, structured synthesis
             self.prompt = ChatPromptTemplate.from_template(
-                "Answer the following question based only on the provided context:\n\n<context>\n{context}\n</context>\n\nQuestion: {question}"
+                "You are an expert healthcare review analyst.\n"
+                "Based ONLY on the provided patient reviews below, give a clear, direct, and synthesized answer to the question.\n"
+                "Highlight key trends, patient sentiment, and specific details mentioned in the reviews.\n\n"
+                "Context (Patient Reviews):\n{context}\n\n"
+                "User Question: {question}\n\n"
+                "Detailed Analysis:"
             )
             logger.info("Gemini RAG pipeline initialized successfully.")
             
@@ -52,15 +59,15 @@ class HospitalReviewBot:
     def get_response(self, user_query):
         query_clean = user_query.strip().lower()
 
-        # 1. Human Chitchat & Intent Interception
+        # 1. Intent & Chitchat Interception
         if re.fullmatch(r"(hi|hello|hey|hey there|hi there|good morning|good afternoon|good evening|greetings)", query_clean):
             return (
                 "👋 **Hello! Welcome to the Hospital Review Assistant.**\n\n"
-                "I am an AI bot trained on patient reviews and feedback datasets. "
+                "I am an AI assistant trained on patient feedback datasets. "
                 "I can analyze feedback regarding **wait times, medical care quality, staff behavior, cleanliness, and billing**.\n\n"
                 "💡 **Try asking me:**\n"
+                "* *'How do patients rate the medical care?'*\n"
                 "* *'What are the main complaints regarding test wait times?'*\n"
-                "* *'How do patients rate the medical and nursing care?'*\n"
                 "* *'Summarize overall feedback on emergency department services.'*"
             )
 
@@ -68,17 +75,7 @@ class HospitalReviewBot:
             return "😊 You're very welcome! Feel free to ask if you need any more insights about hospital patient reviews."
 
         if any(w in query_clean for w in ["bye", "goodbye", "see you", "cya"]):
-            return "👋 Goodbye! Have a great day and stay healthy!"
-
-        if any(w in query_clean for w in ["who are you", "what can you do", "what is this", "help", "about"]):
-            return (
-                "🏥 **About Hospital Review Bot:**\n\n"
-                "I am a Retrieval-Augmented Generation (RAG) assistant that queries patient review logs to help you quickly assess hospital performance.\n\n"
-                "**Trained Data Categories:**\n"
-                "1. ⏱️ **Wait Times**: Diagnostics, ER, and consultations.\n"
-                "2. 🩺 **Care Quality**: Doctor expertise, nurse responsiveness, treatment satisfaction.\n"
-                "3. 🧼 **Facilities**: Hospital cleanliness, room comfort, and billing clarity."
-            )
+            return "👋 Goodbye! Have a great day!"
 
         # 2. Main RAG Pipeline Execution
         if not self.retriever or not self.llm:
@@ -94,10 +91,10 @@ class HospitalReviewBot:
             answer = response.content if hasattr(response, "content") else str(response)
             
             if source_docs:
-                answer += "\n\n### 📑 **Source Citations:**\n"
+                answer += "\n\n---\n### 📑 **Referenced Patient Reviews:**\n"
                 for idx, doc in enumerate(source_docs):
-                    snippet = doc.page_content[:120].replace("\n", " ").strip()
-                    answer += f"* **Review {idx+1}:** \"{snippet}...\"\n"
+                    snippet = doc.page_content.replace("\n", " ").strip()
+                    answer += f"* **Review {idx+1}:** \"{snippet}\"\n"
                     
             return answer
         except Exception as e:
@@ -106,19 +103,28 @@ class HospitalReviewBot:
 
     def _local_fallback(self, query):
         if not os.path.exists(self.data_path):
-            return "**Notice:** Local data unavailable."
+            return "**Notice:** Dataset unavailable."
             
         try:
             df = pd.read_csv(self.data_path)
             text_col = "review" if "review" in df.columns else df.columns[0]
-            keywords = query.lower().split()
-            matches = df[df[text_col].astype(str).str.lower().apply(lambda x: any(k in x for k in keywords))]
+            keywords = [w for w in query.lower().split() if len(w) > 3]
+            
+            matches = df[df[text_col].astype(str).str.lower().apply(
+                lambda x: any(k in x for k in keywords)
+            )]
             
             if matches.empty:
-                return "ℹ️ **No exact matches found.** Try asking about wait times, doctors, nursing, or cleanliness."
+                return "ℹ️ **No matches found.** Please configure `GOOGLE_API_KEY` in Hugging Face Space Settings for full AI capabilities."
                 
-            answer = "⚠️ **Fallback Mode (API Key Missing):** Displaying top matching review record:\n\n"
-            answer += f"**Patient Record:** \"{matches.iloc[0][text_col]}\"\n"
+            top_matches = matches.head(3)[text_col].tolist()
+            
+            answer = "⚠️ **Fallback Mode (API Key Not Activated):**\n"
+            answer += "To enable full AI synthesis and automated summaries, add your `GOOGLE_API_KEY` under Space Settings.\n\n"
+            answer += "**Matching Reviews Found in Dataset:**\n"
+            for idx, rec in enumerate(top_matches):
+                answer += f"{idx+1}. *\"{rec}\"*\n\n"
+                
             return answer
             
         except Exception as e:
