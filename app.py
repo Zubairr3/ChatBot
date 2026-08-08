@@ -2,171 +2,162 @@ import gradio as gr
 import spaces
 from Rag_Char import HospitalReviewBot
 
+# Initialize backend
 bot = HospitalReviewBot()
 
 @spaces.GPU
-def chat_interface(message, history):
-    return bot.get_response(message)
+def generate_response(user_message, history):
+    """Custom state management function for the manual Blocks UI"""
+    if not user_message.strip():
+        return "", history
+    
+    # Fetch AI response (will gracefully handle API limits)
+    bot_reply = bot.get_response(user_message)
+    
+    # Append to history using the modern Gradio 5 format
+    history.append({"role": "user", "content": user_message})
+    history.append({"role": "assistant", "content": bot_reply})
+    
+    # Return empty string to clear textbox, and the updated history
+    return "", history
 
 # -----------------------------------------------------
-# Enterprise Obsidian & Indigo CSS
+# Deep Space & Neon Cyan Glassmorphism CSS
 # -----------------------------------------------------
 custom_css = """
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
 
 body, .gradio-container {
-    background-color: #09090b !important;
-    font-family: 'Inter', sans-serif !important;
-    color: #f4f4f5 !important;
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%) !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    color: #f8fafc !important;
 }
 
-/* Sleek, Compact Enterprise Header */
-.brand-header {
-    background: linear-gradient(90deg, #18181b 0%, #27272a 100%) !important;
-    padding: 16px 24px !important;
-    border-radius: 12px !important;
-    margin-bottom: 16px !important;
-    border: 1px solid #3f3f46 !important;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+/* Glassmorphism Header */
+.header-panel {
+    background: rgba(255, 255, 255, 0.05) !important;
+    backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 16px !important;
+    padding: 24px !important;
+    margin-bottom: 20px !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
 }
 
-.brand-title {
-    color: #f4f4f5 !important;
-    font-size: 1.5rem !important;
-    font-weight: 600 !important;
-    margin: 0 !important;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+.header-title {
+    background: -webkit-linear-gradient(45deg, #38bdf8, #818cf8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 2.2rem !important;
+    font-weight: 800 !important;
+    margin: 0 0 5px 0 !important;
 }
 
-.brand-subtitle {
-    color: #a1a1aa !important;
-    font-size: 0.9rem !important;
-    margin: 0 !important;
-}
-
-/* Clean Accordion Info Box */
-.accordion-box {
-    background-color: #18181b !important;
-    border: 1px solid #3f3f46 !important;
-    border-radius: 8px !important;
-}
-
-.info-content {
-    color: #d4d4d8 !important;
-    font-size: 0.95rem !important;
-    line-height: 1.5 !important;
-}
-
-.info-content strong {
-    color: #818cf8 !important;
-}
-
-/* Chat Area */
+/* Chatbot Area */
 .chatbot-area {
-    min-height: 65vh !important;
-    border: 1px solid #3f3f46 !important;
-    border-radius: 12px !important;
-    background-color: #09090b !important;
+    background: rgba(15, 23, 42, 0.6) !important;
+    border: 1px solid rgba(56, 189, 248, 0.3) !important;
+    border-radius: 16px !important;
+    min-height: 60vh !important;
+    margin-bottom: 15px !important;
 }
 
-/* User Message Bubble */
+/* Message Bubbles */
 .message.user {
-    background-color: #3730a3 !important;
+    background: linear-gradient(90deg, #38bdf8 0%, #0284c7 100%) !important;
     color: #ffffff !important;
     border: none !important;
 }
-.message.user p { color: #ffffff !important; }
-
-/* Bot Message Bubble */
 .message.bot {
-    background-color: #18181b !important;
-    color: #f4f4f5 !important;
-    border: 1px solid #3f3f46 !important;
-}
-.message.bot p { color: #f4f4f5 !important; }
-
-/* Input Box Styling */
-.gradio-textbox {
-    background-color: #18181b !important;
-    border: 1px solid #52525b !important;
-    border-radius: 8px !important;
-}
-.gradio-textbox textarea {
-    color: #f4f4f5 !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: #f8fafc !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
-/* Send Button Styling */
-button.primary {
-    background: linear-gradient(90deg, #4f46e5 0%, #3730a3 100%) !important;
+/* Explicit Send Button */
+.send-btn {
+    background: linear-gradient(90deg, #818cf8 0%, #4f46e5 100%) !important;
     border: none !important;
     color: white !important;
-    font-weight: 600 !important;
-    border-radius: 8px !important;
-    transition: all 0.2s ease-in-out !important;
+    font-weight: 800 !important;
+    font-size: 1.1rem !important;
+    border-radius: 12px !important;
+    transition: transform 0.2s, box-shadow 0.2s !important;
+    cursor: pointer !important;
 }
-button.primary:hover {
-    transform: scale(1.02);
-    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4) !important;
+.send-btn:hover {
+    transform: scale(1.02) !important;
+    box-shadow: 0 0 15px rgba(129, 140, 248, 0.5) !important;
+}
+
+/* Clean Textbox */
+.input-box {
+    border-radius: 12px !important;
+    border: 1px solid rgba(56, 189, 248, 0.4) !important;
+    background: rgba(15, 23, 42, 0.8) !important;
+}
+.input-box textarea {
+    color: #f8fafc !important;
+    font-size: 1.05rem !important;
 }
 """
 
-theme = gr.themes.Default(
-    primary_hue="indigo",
-    neutral_hue="zinc"
+theme = gr.themes.Monochrome(
+    primary_hue="sky",
+    neutral_hue="slate"
 ).set(
-    body_background_fill="#09090b",
-    block_background_fill="#18181b",
-    block_border_color="#3f3f46",
-    button_primary_background_fill="#3730a3",
-    button_primary_text_color="#ffffff"
+    block_background_fill="transparent",
+    block_border_color="transparent"
 )
 
 with gr.Blocks(css=custom_css, theme=theme, title="Hospital Review Bot") as demo:
-    # 1. Compact Navbar Header
-    gr.HTML("""
-        <div class="brand-header">
-            <div class="brand-title">🏥 Hospital Review Bot</div>
-            <div class="brand-subtitle">AI-Powered Patient Feedback Intelligence</div>
-        </div>
-    """)
-    
-    # 2. Accordion Box
-    with gr.Accordion("✨ Click here to know about this ChatBot", open=False, elem_classes="accordion-box"):
+    # 1. Custom Header
+    with gr.Column(elem_classes="header-panel"):
         gr.HTML("""
-        <div class="info-content">
-            <p style="margin-bottom: 8px;"><strong>What is this bot trained on?</strong></p>
-            <p style="margin-bottom: 8px;">This AI system is trained on thousands of real patient feedback records. It instantly analyzes and answers your questions regarding:</p>
-            <ul style="padding-left: 20px; margin-top: 0;">
-                <li><strong>Wait Times:</strong> Diagnostics, ER responsiveness, and appointments.</li>
-                <li><strong>Medical Care:</strong> Doctor expertise, nursing staff, and overall treatment quality.</li>
-                <li><strong>Facilities:</strong> Cleanliness, room comfort, and billing clarity.</li>
-            </ul>
-        </div>
+            <h1 class='header-title'>🏥 Hospital Review Bot</h1>
+            <p style='color:#94a3b8; margin:0; font-size:1.1rem;'>Advanced Patient Feedback Intelligence</p>
         """)
+        
+        with gr.Accordion("✨ Tap to see what this AI is trained on", open=False):
+            gr.Markdown("""
+            *   **Wait Times:** Diagnostics, ER responsiveness, and appointments.
+            *   **Medical Care:** Doctor expertise, nursing staff, and overall treatment quality.
+            *   **Facilities:** Cleanliness, room comfort, and billing clarity.
+            """)
 
-    # 3. Chat Interface (Fixed Gradio 5 parameters)
-    gr.ChatInterface(
-        fn=chat_interface,
-        type="messages",
-        chatbot=gr.Chatbot(
-            height="65vh",
-            elem_classes="chatbot-area",
-            type="messages"
-        ),
-        textbox=gr.Textbox(
-            placeholder="Type any questions here in space to ask...", 
-            container=False, 
-            scale=7
-        ),
+    # 2. The Chat Display
+    chat_history = gr.Chatbot(type="messages", elem_classes="chatbot-area", show_label=False)
+    
+    # 3. Manual Input Row with Explicit Button
+    with gr.Row():
+        user_input = gr.Textbox(
+            placeholder="Type your question here and press Send...",
+            show_label=False,
+            scale=8,
+            elem_classes="input-box"
+        )
+        send_btn = gr.Button("Send ➔", elem_classes="send-btn", scale=2)
+
+    # 4. Interactive Examples
+    gr.Examples(
         examples=[
             "What do patients say about wait times for tests?",
             "How do patients rate the medical care?",
             "Summarize general feedback regarding hospital cleanliness."
         ],
+        inputs=user_input
+    )
+
+    # 5. Wire up the logic (Triggers on Button Click OR pressing Enter)
+    send_btn.click(
+        fn=generate_response, 
+        inputs=[user_input, chat_history], 
+        outputs=[user_input, chat_history]
+    )
+    user_input.submit(
+        fn=generate_response, 
+        inputs=[user_input, chat_history], 
+        outputs=[user_input, chat_history]
     )
 
 if __name__ == "__main__":
