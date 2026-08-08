@@ -1,12 +1,10 @@
 ﻿import os
 import pandas as pd
+import logging
 from langchain_community.document_loaders import DataFrameLoader
 from langchain_community.vectorstores import FAISS
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
-from langchain.chains import create_retrieval_chain
-from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate
-import logging
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -14,13 +12,13 @@ logger = logging.getLogger(__name__)
 class HospitalReviewBot:
     def __init__(self, data_path="reviews.csv"):
         self.data_path = data_path
-        self.qa_chain = None
+        self.retriever = None
+        self.llm = None
+        self.prompt = None
         self.setup_rag()
 
     def setup_rag(self):
-        google_api_key = os.environ.get("GOOGLE_API_KEY")
-        
-        if not google_api_key:
+        if not os.environ.get("GOOGLE_API_KEY"):
             logger.warning("GOOGLE_API_KEY not found. Defaulting to local fallback.")
             return
             
@@ -36,45 +34,42 @@ class HospitalReviewBot:
             documents = loader.load()
 
             # Initialize Gemini Embeddings
-            embeddings = GoogleGenerativeAIEmbeddings(
-                model="models/embedding-001", 
-                google_api_key=google_api_key
-            )
+            embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
             vectorstore = FAISS.from_documents(documents, embeddings)
+            self.retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
             
             # Initialize Gemini Chat Model
-            llm = ChatGoogleGenerativeAI(
-                model="gemini-1.5-flash", 
-                temperature=0, 
-                google_api_key=google_api_key
-            )
+            self.llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0)
 
-            # Modern LangChain Architecture (v0.2+ compatible)
-            prompt = ChatPromptTemplate.from_template(
-                "Answer the following question based only on the provided context:\n\n<context>\n{context}\n</context>\n\nQuestion: {input}"
+            # Modern LangChain Core Architecture (Immune to chains deprecation)
+            self.prompt = ChatPromptTemplate.from_template(
+                "Answer the following question based only on the provided context:\n\n<context>\n{context}\n</context>\n\nQuestion: {question}"
             )
-            
-            document_chain = create_stuff_documents_chain(llm, prompt)
-            retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
-            
-            self.qa_chain = create_retrieval_chain(retriever, document_chain)
-            logger.info("Gemini RAG pipeline initialized using modern chains.")
+            logger.info("Gemini RAG pipeline initialized using native LCEL.")
             
         except Exception as e:
             logger.error(f"Initialization Error: {e}")
-            self.qa_chain = None
+            self.retriever = None
 
     def get_response(self, user_query):
-        if not self.qa_chain:
+        if not self.retriever or not self.llm:
             return self._local_fallback(user_query)
             
         try:
-            # The invoke key changes from "query" to "input" in modern chains
-            response = self.qa_chain.invoke({"input": user_query})
-            answer = response.get("answer", "I couldn't find relevant information.")
+            # 1. Retrieve relevant documents
+            source_docs = self.retriever.invoke(user_query)
             
-            # The context key changes from "source_documents" to "context"
-            source_docs = response.get("context", [])
+            # 2. Format the context for the LLM
+            context = "\n\n".join(doc.page_content for doc in source_docs)
+            
+            # 3. Create the execution chain and invoke
+            chain = self.prompt | self.llm
+            response = chain.invoke({"context": context, "question": user_query})
+            
+            # 4. Extract text safely
+            answer = response.content if hasattr(response, "content") else str(response)
+            
+            # 5. Append Citations
             if source_docs:
                 answer += "\n\n### **Source Citations:**\n"
                 for idx, doc in enumerate(source_docs):
