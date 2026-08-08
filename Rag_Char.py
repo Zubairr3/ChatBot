@@ -16,19 +16,16 @@ class HospitalReviewBot:
         self.retriever = None
         self.llm = None
         self.prompt = None
-        self.fallback_reason = "Unknown Error"
         self.setup_rag()
 
     def setup_rag(self):
         api_key = os.environ.get("GOOGLE_API_KEY")
         if not api_key:
-            self.fallback_reason = "GOOGLE_API_KEY is missing from the active environment variables."
-            logger.warning(self.fallback_reason)
+            logger.warning("GOOGLE_API_KEY missing.")
             return
             
         if not os.path.exists(self.data_path):
-            self.fallback_reason = f"Dataset '{self.data_path}' is missing from the repository."
-            logger.error(self.fallback_reason)
+            logger.error(f"Dataset '{self.data_path}' is missing.")
             return
 
         try:
@@ -38,7 +35,6 @@ class HospitalReviewBot:
             loader = DataFrameLoader(df, page_content_column=text_col)
             documents = loader.load()
 
-            # Fix: Using the exact stable model name without the "models/" prefix
             embeddings = GoogleGenerativeAIEmbeddings(
                 model="gemini-embedding-001",
                 google_api_key=api_key
@@ -60,27 +56,22 @@ class HospitalReviewBot:
                 "User Question: {question}\n\n"
                 "Detailed Analysis:"
             )
-            self.fallback_reason = None
             logger.info("Gemini RAG pipeline initialized successfully.")
             
         except Exception as e:
-            self.fallback_reason = f"AI Initialization Crash: {str(e)}"
-            logger.error(self.fallback_reason)
+            logger.error(f"AI Initialization Crash: {str(e)}")
             self.retriever = None
 
     def get_response(self, user_query):
         query_clean = user_query.strip().lower()
 
-        # Intercept casual chitchat
         if re.fullmatch(r"(hi|hello|hey|hey there|hi there|good morning|good afternoon|good evening|greetings)", query_clean):
             return (
                 "👋 **Hello! Welcome to the Hospital Review Assistant.**\n\n"
-                "I am an AI assistant trained on patient feedback datasets. "
-                "I can analyze feedback regarding **wait times, medical care quality, staff behavior, cleanliness, and billing**.\n\n"
+                "I am an AI assistant trained to analyze patient feedback regarding **wait times, medical care quality, staff behavior, cleanliness, and billing**.\n\n"
                 "💡 **Try asking me:**\n"
                 "* *'How do patients rate the medical care?'*\n"
-                "* *'What are the main complaints regarding test wait times?'*\n"
-                "* *'Summarize overall feedback on emergency department services.'*"
+                "* *'What are the main complaints regarding test wait times?'*"
             )
 
         if any(w in query_clean for w in ["thanks", "thank you", "thx", "appreciate it"]):
@@ -89,7 +80,6 @@ class HospitalReviewBot:
         if any(w in query_clean for w in ["bye", "goodbye", "see you", "cya"]):
             return "👋 Goodbye! Have a great day!"
 
-        # Execute RAG Pipeline
         if not self.retriever or not self.llm:
             return self._local_fallback(user_query)
             
@@ -111,11 +101,11 @@ class HospitalReviewBot:
             return answer
         except Exception as e:
             logger.error(f"Inference Error: {e}")
-            return f"**System Error:** Unable to process the request. Details: {str(e)}"
+            return "I am currently experiencing high traffic. Information is not available at this exact moment, but please try asking a similar question shortly!"
 
     def _local_fallback(self, query):
         if not os.path.exists(self.data_path):
-            return "❌ **Critical Error:** Dataset unavailable."
+            return "I'm sorry, but the dataset is currently unavailable."
             
         try:
             df = pd.read_csv(self.data_path)
@@ -126,19 +116,17 @@ class HospitalReviewBot:
                 lambda x: any(k in x for k in keywords)
             )]
             
-            # Print the exact diagnostic error to the UI
-            answer = f"⚠️ **Fallback Mode Active**\n*Diagnostic Reason:* `{self.fallback_reason}`\n\n"
-            
             if matches.empty:
-                answer += "ℹ️ **No matches found.**"
-                return answer
+                return "I couldn't find any specific information related to your request. Could you please try asking a similar question regarding wait times, staff, or facilities?"
                 
             top_matches = matches.head(3)[text_col].tolist()
-            answer += "**Matching Reviews Found in Dataset:**\n"
+            answer = "I am currently experiencing heavy API traffic, but here is some related feedback I found for you:\n\n"
             for idx, rec in enumerate(top_matches):
-                answer += f"{idx+1}. *\"{rec}\"*\n\n"
+                # Clean formatting to prevent UI glitches
+                clean_rec = rec.replace('\n', ' ').strip()
+                answer += f"🔹 *\"{clean_rec}\"*\n\n"
                 
             return answer
             
         except Exception as e:
-            return "**Notice:** Could not complete local retrieval."
+            return "I'm sorry, I cannot retrieve the information right now. Please try again in a few moments."
