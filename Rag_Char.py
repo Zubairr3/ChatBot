@@ -1,4 +1,5 @@
 ﻿import os
+import re
 import pandas as pd
 import logging
 from langchain_community.document_loaders import DataFrameLoader
@@ -33,7 +34,6 @@ class HospitalReviewBot:
             loader = DataFrameLoader(df, page_content_column=text_col)
             documents = loader.load()
 
-            # Using the official active Google embedding model to prevent 404s
             embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
             vectorstore = FAISS.from_documents(documents, embeddings)
             self.retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
@@ -50,6 +50,37 @@ class HospitalReviewBot:
             self.retriever = None
 
     def get_response(self, user_query):
+        query_clean = user_query.strip().lower()
+
+        # 1. Human Chitchat & Intent Interception
+        if re.fullmatch(r"(hi|hello|hey|hey there|hi there|good morning|good afternoon|good evening|greetings)", query_clean):
+            return (
+                "👋 **Hello! Welcome to the Hospital Review Assistant.**\n\n"
+                "I am an AI bot trained on patient reviews and feedback datasets. "
+                "I can analyze feedback regarding **wait times, medical care quality, staff behavior, cleanliness, and billing**.\n\n"
+                "💡 **Try asking me:**\n"
+                "* *'What are the main complaints regarding test wait times?'*\n"
+                "* *'How do patients rate the medical and nursing care?'*\n"
+                "* *'Summarize overall feedback on emergency department services.'*"
+            )
+
+        if any(w in query_clean for w in ["thanks", "thank you", "thx", "appreciate it"]):
+            return "😊 You're very welcome! Feel free to ask if you need any more insights about hospital patient reviews."
+
+        if any(w in query_clean for w in ["bye", "goodbye", "see you", "cya"]):
+            return "👋 Goodbye! Have a great day and stay healthy!"
+
+        if any(w in query_clean for w in ["who are you", "what can you do", "what is this", "help", "about"]):
+            return (
+                "🏥 **About Hospital Review Bot:**\n\n"
+                "I am a Retrieval-Augmented Generation (RAG) assistant that queries patient review logs to help you quickly assess hospital performance.\n\n"
+                "**Trained Data Categories:**\n"
+                "1. ⏱️ **Wait Times**: Diagnostics, ER, and consultations.\n"
+                "2. 🩺 **Care Quality**: Doctor expertise, nurse responsiveness, treatment satisfaction.\n"
+                "3. 🧼 **Facilities**: Hospital cleanliness, room comfort, and billing clarity."
+            )
+
+        # 2. Main RAG Pipeline Execution
         if not self.retriever or not self.llm:
             return self._local_fallback(user_query)
             
@@ -63,10 +94,10 @@ class HospitalReviewBot:
             answer = response.content if hasattr(response, "content") else str(response)
             
             if source_docs:
-                answer += "\n\n### **Source Citations:**\n"
+                answer += "\n\n### 📑 **Source Citations:**\n"
                 for idx, doc in enumerate(source_docs):
-                    snippet = doc.page_content[:100].replace("\n", " ").strip()
-                    answer += f"* **Source {idx+1}:** \"{snippet}...\"\n"
+                    snippet = doc.page_content[:120].replace("\n", " ").strip()
+                    answer += f"* **Review {idx+1}:** \"{snippet}...\"\n"
                     
             return answer
         except Exception as e:
@@ -84,10 +115,10 @@ class HospitalReviewBot:
             matches = df[df[text_col].astype(str).str.lower().apply(lambda x: any(k in x for k in keywords))]
             
             if matches.empty:
-                return "**Fallback Mode:** No API key provided; local search yielded no results."
+                return "ℹ️ **No exact matches found.** Try asking about wait times, doctors, nursing, or cleanliness."
                 
-            answer = "**Fallback Mode (API Key Missing):** Displaying top local match.\n\n"
-            answer += f"**Matched Record:** {matches.iloc[0][text_col]}\n"
+            answer = "⚠️ **Fallback Mode (API Key Missing):** Displaying top matching review record:\n\n"
+            answer += f"**Patient Record:** \"{matches.iloc[0][text_col]}\"\n"
             return answer
             
         except Exception as e:
