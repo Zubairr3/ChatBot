@@ -43,9 +43,9 @@ class HospitalReviewBot:
             self.vectorizer = TfidfVectorizer(stop_words='english')
             self.tfidf_matrix = self.vectorizer.fit_transform(self.reviews)
 
-            # 3. Setup Gemini LLM for Generation (Updated to -latest to fix 404 API error)
+            # 3. Setup Gemini LLM for Generation (Updated to official production endpoint)
             self.llm = ChatGoogleGenerativeAI(
-                model="gemini-1.5-flash-latest", 
+                model="gemini-3.6-flash", 
                 temperature=0.3,
                 google_api_key=api_key
             )
