@@ -4,9 +4,8 @@ import logging
 import re
 from typing import Union, Dict
 
-from langchain_community.document_loaders import DataFrameLoader
-from langchain_community.vectorstores import FAISS
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 
@@ -16,13 +15,15 @@ logger = logging.getLogger(__name__)
 class HospitalReviewBot:
     def __init__(self, data_path: str = "reviews.csv"):
         self.data_path = data_path
-        self.retriever = None
+        self.df = None
+        self.vectorizer = None
+        self.tfidf_matrix = None
         self.llm = None
         self.prompt = None
         self.setup_rag()
 
     def setup_rag(self) -> None:
-        """Initializes RAG with local embeddings and strict abstractive summarization prompt."""
+        """Initializes a lightweight TF-IDF retrieval engine and Gemini LLM."""
         api_key = os.environ.get("GOOGLE_API_KEY")
         if not api_key:
             logger.warning("GOOGLE_API_KEY missing. AI synthesis will be disabled.")
@@ -34,25 +35,22 @@ class HospitalReviewBot:
 
         try:
             # 1. Load Data
-            df = pd.read_csv(self.data_path)
-            text_col = "review" if "review" in df.columns else df.columns[0]
-            
-            loader = DataFrameLoader(df, page_content_column=text_col)
-            documents = loader.load()
+            self.df = pd.read_csv(self.data_path)
+            text_col = "review" if "review" in self.df.columns else self.df.columns[0]
+            self.reviews = self.df[text_col].astype(str).tolist()
 
-            # 2. Setup Local Embeddings (Zero startup API cost)
-            embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-            vectorstore = FAISS.from_documents(documents, embeddings)
-            self.retriever = vectorstore.as_retriever(search_kwargs={"k": 6})
-            
-            # 3. Setup Gemini LLM
+            # 2. Build Lightweight TF-IDF Matrix (Lightning fast, zero PyTorch overhead)
+            self.vectorizer = TfidfVectorizer(stop_words='english')
+            self.tfidf_matrix = self.vectorizer.fit_transform(self.reviews)
+
+            # 3. Setup Gemini LLM for Generation
             self.llm = ChatGoogleGenerativeAI(
                 model="gemini-1.5-flash", 
                 temperature=0.3,
                 google_api_key=api_key
             )
 
-            # 4. Strict Abstractive Summarization Prompt (Prevents raw CSV copying)
+            # 4. Strict Abstractive Summarization Prompt
             self.prompt = ChatPromptTemplate.from_template(
                 "You are an expert Hospital Clinical Quality Director and Data Analyst.\n"
                 "Your sole objective is to write an abstractive, professional EXECUTIVE SUMMARY that directly answers the user's question based on the provided patient feedback.\n\n"
@@ -64,15 +62,26 @@ class HospitalReviewBot:
                 "User Question: {question}\n\n"
                 "Executive Summary:"
             )
-            logger.info("RAG pipeline initialized successfully with strict summarization rules.")
+            logger.info("Lightweight TF-IDF retrieval & Gemini RAG pipeline initialized successfully.")
             
         except Exception as e:
             logger.error(f"AI Initialization Crash: {str(e)}")
-            self.retriever = None
+            self.vectorizer = None
+
+    def retrieve_context(self, query: str, top_k: int = 6) -> str:
+        """Finds the most relevant reviews using cosine similarity on TF-IDF vectors."""
+        if self.vectorizer is None or self.tfidf_matrix is None:
+            return ""
+        
+        query_vec = self.vectorizer.transform([query])
+        similarity_scores = cosine_similarity(query_vec, self.tfidf_matrix).flatten()
+        top_indices = similarity_scores.argsort()[-top_k:][::-1]
+        
+        relevant_texts = [self.reviews[idx] for idx in top_indices]
+        return "\n\n".join(relevant_texts)
 
     def get_response(self, user_query: Union[str, Dict]) -> str:
-        """Processes the user query and returns a synthesized AI summary."""
-        
+        """Processes user query and returns a synthesized AI summary."""
         if isinstance(user_query, dict):
             user_query = user_query.get("text", "")
         elif not isinstance(user_query, str):
@@ -96,14 +105,14 @@ class HospitalReviewBot:
         if any(w in query_clean for w in ["bye", "goodbye", "see you", "cya"]):
             return "👋 Goodbye! Have a great day!"
 
-        if not self.retriever or not self.llm:
+        if not self.vectorizer or not self.llm:
             return "I am currently initializing my analysis engine or missing API configurations. Please check your system settings."
             
-        # Execute AI RAG Pipeline with Strict Summary Prompt
         try:
-            source_docs = self.retriever.invoke(user_query)
-            context = "\n\n".join(doc.page_content for doc in source_docs)
-            
+            context = self.retrieve_context(user_query, top_k=6)
+            if not context:
+                return "I couldn't find any relevant patient feedback in the database for your query."
+                
             chain = self.prompt | self.llm
             response = chain.invoke({"context": context, "question": user_query})
             
@@ -113,3 +122,15 @@ class HospitalReviewBot:
         except Exception as e:
             logger.error(f"Inference Error: {str(e)}")
             return "I am currently experiencing a temporary connection limit. Please try asking your question again in a moment!"
+
+if __name__ == "__main__":
+    bot = HospitalReviewBot(data_path="reviews.csv")
+    test_query = "What do patients say about wait times for tests?"
+    print(bot.get_response(test_query))
+
+    test_query = "How do patients rate the medical care?"
+    print(bot.get_response(test_query))
+
+    test_query = "Summarize general feedback regarding hospital cleanliness."
+    print(bot.get_response(test_query))     
+    

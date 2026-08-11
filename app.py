@@ -1,10 +1,9 @@
 import gradio as gr
-import spaces
 from Rag_Char import HospitalReviewBot
 
 bot = HospitalReviewBot()
 
-@spaces.GPU
+# NO GPU DECORATOR HERE - This ensures it runs safely on the CPU!
 def generate_response(user_message, history):
     """Custom state management function for the manual Blocks UI"""
     if not user_message.strip():
@@ -110,7 +109,7 @@ theme = gr.themes.Monochrome(
 )
 
 with gr.Blocks(css=custom_css, theme=theme, title="Hospital Review Bot") as demo:
-    # 1. Clean, Graphic Navbar Header (No /main, Professional Look)
+    # 1. Clean, Graphic Navbar Header
     with gr.Column(elem_classes="header-panel"):
         gr.HTML("""
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
