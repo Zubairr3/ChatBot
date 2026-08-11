@@ -4,50 +4,35 @@ from Rag_Char import HospitalReviewBot
 
 bot = HospitalReviewBot()
 
-# -----------------------------------------------------
-# THE HACK: A fake GPU function to pass Hugging Face's 
-# ZeroGPU startup check without breaking the CPU backend.
-# -----------------------------------------------------
 @spaces.GPU
 def dummy_gpu_pass():
     pass
 
-# Our real generation function (Runs safely on CPU)
 def generate_response(user_message, history):
-    """Custom state management function for the manual Blocks UI"""
-    
-    # 1. Safety check for empty history
     if history is None:
         history = []
         
-    # 2. Prevent empty messages from crashing the app
     if not user_message or not str(user_message).strip():
         return "", history
     
-    # 3. Get AI Response
     bot_reply = bot.get_response(str(user_message))
     
-    # 4. Safely update the chat history
     history.append({"role": "user", "content": str(user_message)})
     history.append({"role": "assistant", "content": str(bot_reply)})
     
     return "", history
 
-# -----------------------------------------------------
-# Premium SaaS CSS Theme
-# -----------------------------------------------------
 custom_css = """
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 body, .gradio-container {
-    background-color: #0B0F19 !important; /* Deep Modern Dark */
+    background-color: #0B0F19 !important;
     font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
     color: #E2E8F0 !important;
     max-width: 950px !important;
     margin: 0 auto !important;
 }
 
-/* Premium Header Panel */
 .header-panel {
     background: linear-gradient(145deg, #111827, #1E293B) !important;
     border: 1px solid #334155 !important;
@@ -90,7 +75,6 @@ body, .gradio-container {
     box-shadow: 0 0 8px #10B981;
 }
 
-/* Accordion Info Box */
 .gr-accordion {
     background-color: rgba(30, 41, 59, 0.5) !important;
     border: 1px solid #334155 !important;
@@ -98,7 +82,6 @@ body, .gradio-container {
     backdrop-filter: blur(8px);
 }
 
-/* Chatbot Container */
 .chatbot-area {
     background: #0F172A !important;
     border: 1px solid #334155 !important;
@@ -108,7 +91,6 @@ body, .gradio-container {
     box-shadow: inset 0 2px 4px 0 rgba(0,0,0,0.06) !important;
 }
 
-/* Chat Bubbles (iOS / Modern style) */
 .message.user {
     background: linear-gradient(135deg, #3B82F6, #2563EB) !important;
     color: white !important;
@@ -129,7 +111,6 @@ body, .gradio-container {
     line-height: 1.5 !important;
 }
 
-/* Input Box */
 .input-box {
     background: #1E293B !important;
     border: 1px solid #334155 !important;
@@ -146,7 +127,6 @@ body, .gradio-container {
     box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2) !important;
 }
 
-/* Submit Button */
 .send-btn {
     background: linear-gradient(135deg, #3B82F6, #2563EB) !important;
     border: none !important;
@@ -165,7 +145,6 @@ body, .gradio-container {
     background: linear-gradient(135deg, #60A5FA, #3B82F6) !important;
 }
 
-/* Footer styling */
 .footer-text {
     text-align: center;
     color: #64748B;
@@ -185,13 +164,18 @@ theme = gr.themes.Monochrome(
 
 with gr.Blocks(css=custom_css, theme=theme, title="AI Hospital Analyst") as demo:
     
-    # --- 1. PREMIUM HEADER ---
     with gr.Column(elem_classes="header-panel"):
         gr.HTML("""
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
                 <div style="display: flex; align-items: center; gap: 12px;">
-                    <div style="background: #1E293B; padding: 10px; border-radius: 12px; border: 1px solid #334155;">
-                        <span style="font-size: 1.8rem; line-height: 1;">🏥</span>
+                    <div style="background: #111827; padding: 10px; border-radius: 12px; border: 1px solid #334155; box-shadow: 0 4px 6px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 6v4"/>
+                            <path d="M10 8h4"/>
+                            <path d="M3 21h18"/>
+                            <path d="M4 21V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16"/>
+                            <path d="M9 21v-4h6v4"/>
+                        </svg>
                     </div>
                     <div>
                         <h1 class='gradient-text'>Hospital Review AI</h1>
@@ -204,7 +188,6 @@ with gr.Blocks(css=custom_css, theme=theme, title="AI Hospital Analyst") as demo
             </div>
         """)
         
-        # --- 2. ACCORDION (Cleaner, better formatted) ---
         with gr.Accordion("✨ How this AI works (Click to expand)", open=False):
             gr.Markdown("""
             ### 🤖 AI-Powered Data Synthesis
@@ -220,15 +203,17 @@ with gr.Blocks(css=custom_css, theme=theme, title="AI Hospital Analyst") as demo
             *Architecture: Built with Python, Scikit-Learn (TF-IDF), Google Gemini, and Gradio.*
             """)
 
-    # --- 3. CHATBOT INTERFACE ---
+    # Updated with a clean, professional corporate/medical tech avatar instead of the cartoon bot
     chat_history = gr.Chatbot(
         type="messages", 
         elem_classes="chatbot-area", 
         show_label=False,
-        avatar_images=("https://api.dicebear.com/7.x/avataaars/svg?seed=Felix", "https://api.dicebear.com/7.x/bottts/svg?seed=HospitalBot")
+        avatar_images=(
+            "https://api.dicebear.com/7.x/initials/svg?seed=User&backgroundColor=3b82f6", 
+            "https://api.dicebear.com/7.x/shapes/svg?seed=HospitalAI&backgroundColor=1e293b"
+        )
     )
     
-    # --- 4. INPUT & BUTTON CONTROLS ---
     with gr.Row():
         user_input = gr.Textbox(
             placeholder="Ask about patient feedback (e.g., 'How is the cleanliness?')",
@@ -238,7 +223,6 @@ with gr.Blocks(css=custom_css, theme=theme, title="AI Hospital Analyst") as demo
         )
         send_btn = gr.Button("Send", elem_classes="send-btn", scale=2)
 
-    # --- 5. SUGGESTED PROMPTS ---
     gr.Examples(
         examples=[
             "What do patients say about wait times for tests?",
@@ -248,14 +232,12 @@ with gr.Blocks(css=custom_css, theme=theme, title="AI Hospital Analyst") as demo
         inputs=user_input
     )
     
-    # --- 6. FOOTER BRANDING ---
     gr.HTML("""
         <div class="footer-text">
             Developed as an AI Engineering Portfolio Project • Powered by LLM Synthesis
         </div>
     """)
 
-    # --- 7. EVENT HANDLERS ---
     send_btn.click(
         fn=generate_response, 
         inputs=[user_input, chat_history], 
@@ -268,4 +250,4 @@ with gr.Blocks(css=custom_css, theme=theme, title="AI Hospital Analyst") as demo
     )
 
 if __name__ == "__main__":
-    demo.launch()  # Reverted back to the safe default!
+    demo.launch()
