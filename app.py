@@ -15,13 +15,21 @@ def dummy_gpu_pass():
 # Our real generation function (Runs safely on CPU)
 def generate_response(user_message, history):
     """Custom state management function for the manual Blocks UI"""
-    if not user_message.strip():
+    
+    # 1. Safety check for empty history
+    if history is None:
+        history = []
+        
+    # 2. Prevent empty messages from crashing the app
+    if not user_message or not str(user_message).strip():
         return "", history
     
-    bot_reply = bot.get_response(user_message)
+    # 3. Get AI Response
+    bot_reply = bot.get_response(str(user_message))
     
-    history.append({"role": "user", "content": user_message})
-    history.append({"role": "assistant", "content": bot_reply})
+    # 4. Safely update the chat history
+    history.append({"role": "user", "content": str(user_message)})
+    history.append({"role": "assistant", "content": str(bot_reply)})
     
     return "", history
 
@@ -228,7 +236,7 @@ with gr.Blocks(css=custom_css, theme=theme, title="AI Hospital Analyst") as demo
             scale=8,
             elem_classes="input-box"
         )
-        send_btn = gr.Button("Analyze Data", elem_classes="send-btn", scale=2)
+        send_btn = gr.Button("Send", elem_classes="send-btn", scale=2)
 
     # --- 5. SUGGESTED PROMPTS ---
     gr.Examples(
@@ -260,4 +268,5 @@ with gr.Blocks(css=custom_css, theme=theme, title="AI Hospital Analyst") as demo
     )
 
 if __name__ == "__main__":
-    demo.launch()
+    # THE CRUCIAL FIX: Disabling ssr_mode stops the SvelteKit network routing error!
+    demo.launch(ssr_mode=False)
