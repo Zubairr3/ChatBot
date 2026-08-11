@@ -43,9 +43,9 @@ class HospitalReviewBot:
             self.vectorizer = TfidfVectorizer(stop_words='english')
             self.tfidf_matrix = self.vectorizer.fit_transform(self.reviews)
 
-            # 3. Setup Gemini LLM for Generation
+            # 3. Setup Gemini LLM for Generation (Updated to -latest to fix 404 API error)
             self.llm = ChatGoogleGenerativeAI(
-                model="gemini-1.5-flash", 
+                model="gemini-1.5-flash-latest", 
                 temperature=0.3,
                 google_api_key=api_key
             )
@@ -132,5 +132,4 @@ if __name__ == "__main__":
     print(bot.get_response(test_query))
 
     test_query = "Summarize general feedback regarding hospital cleanliness."
-    print(bot.get_response(test_query))     
-    
+    print(bot.get_response(test_query))
