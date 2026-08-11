@@ -268,5 +268,4 @@ with gr.Blocks(css=custom_css, theme=theme, title="AI Hospital Analyst") as demo
     )
 
 if __name__ == "__main__":
-    # THE CRUCIAL FIX: Disabling ssr_mode stops the SvelteKit network routing error!
-    demo.launch(ssr_mode=False)
+    demo.launch()  # Reverted back to the safe default!
