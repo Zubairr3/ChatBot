@@ -23,7 +23,7 @@ class HospitalReviewBot:
         self.setup_rag()
 
     def setup_rag(self) -> None:
-        """Initializes a lightweight TF-IDF retrieval engine and Gemini LLM."""
+        """Initializes the TF-IDF retrieval engine and Gemini LLM."""
         api_key = os.environ.get("GOOGLE_API_KEY")
         if not api_key:
             logger.warning("GOOGLE_API_KEY missing. AI synthesis will be disabled.")
@@ -34,42 +34,40 @@ class HospitalReviewBot:
             return
 
         try:
-            # 1. Load Data
             self.df = pd.read_csv(self.data_path)
             text_col = "review" if "review" in self.df.columns else self.df.columns[0]
             self.reviews = self.df[text_col].astype(str).tolist()
 
-            # 2. Build Lightweight TF-IDF Matrix (Lightning fast, zero PyTorch overhead)
             self.vectorizer = TfidfVectorizer(stop_words='english')
             self.tfidf_matrix = self.vectorizer.fit_transform(self.reviews)
 
-            # 3. Setup Gemini LLM for Generation (Updated to official production endpoint)
             self.llm = ChatGoogleGenerativeAI(
-                model="gemini-3.6-flash", 
-                temperature=0.3,
+                model="gemini-2.0-flash", 
+                temperature=0.1, # Lower temperature prevents hallucinations
                 google_api_key=api_key
             )
 
-            # 4. Strict Abstractive Summarization Prompt
+            # UPDATED PROMPT: Forces short bullet points and related questions
             self.prompt = ChatPromptTemplate.from_template(
-                "You are an expert Hospital Clinical Quality Director and Data Analyst.\n"
-                "Your sole objective is to write an abstractive, professional EXECUTIVE SUMMARY that directly answers the user's question based on the provided patient feedback.\n\n"
+                "You are an expert Hospital Data Analyst.\n"
+                "Your objective is to provide a clear, factual summary of patient feedback based strictly on the provided context.\n\n"
                 "STRICT RULES:\n"
-                "1. DO NOT quote, copy, or paste individual reviews verbatim.\n"
-                "2. DO NOT list individual customer review texts or use quotation marks for raw feedback.\n"
-                "3. Synthesize the core themes, overall sentiment, trends, and patterns across the feedback into concise, professional paragraphs.\n\n"
+                "1. NO LONG PARAGRAPHS. You must answer using 2 to 3 short, concise bullet points.\n"
+                "2. DO NOT quote or copy individual reviews verbatim.\n"
+                "3. If the user provides only a single word (e.g., 'wait', 'cleanliness'), summarize the general sentiment regarding that specific topic.\n"
+                "4. NEVER hallucinate or invent data. If the context does not contain the answer, reply: 'There is not enough patient feedback on this specific topic.'\n"
+                "5. At the very end of your response, provide exactly 3 bulleted follow-up questions the user could ask, under the exact heading: '💡 Related Questions:'\n\n"
                 "Patient Feedback Context:\n{context}\n\n"
-                "User Question: {question}\n\n"
-                "Executive Summary:"
+                "User Query: {question}\n\n"
+                "Response:"
             )
-            logger.info("Lightweight TF-IDF retrieval & Gemini RAG pipeline initialized successfully.")
+            logger.info("Pipeline initialized successfully.")
             
         except Exception as e:
             logger.error(f"AI Initialization Crash: {str(e)}")
             self.vectorizer = None
 
     def retrieve_context(self, query: str, top_k: int = 6) -> str:
-        """Finds the most relevant reviews using cosine similarity on TF-IDF vectors."""
         if self.vectorizer is None or self.tfidf_matrix is None:
             return ""
         
@@ -81,7 +79,6 @@ class HospitalReviewBot:
         return "\n\n".join(relevant_texts)
 
     def get_response(self, user_query: Union[str, Dict]) -> str:
-        """Processes user query and returns a synthesized AI summary."""
         if isinstance(user_query, dict):
             user_query = user_query.get("text", "")
         elif not isinstance(user_query, str):
@@ -89,24 +86,11 @@ class HospitalReviewBot:
             
         query_clean = user_query.strip().lower()
 
-        # Polite Chitchat & Intent Detection
         if re.fullmatch(r"(hi|hello|hey|hey there|hi there|good morning|good afternoon|good evening|greetings)", query_clean):
-            return (
-                "👋 **Hello! Welcome to the Hospital Review Assistant.**\n\n"
-                "I am an AI assistant trained to analyze and summarize patient feedback regarding **wait times, medical care quality, staff behavior, cleanliness, and billing**.\n\n"
-                "💡 **Try asking me:**\n"
-                "* *'How do patients rate the medical care?'*\n"
-                "* *'Summarize the general feedback regarding hospital cleanliness.'*"
-            )
-
-        if any(w in query_clean for w in ["thanks", "thank you", "thx", "appreciate it"]):
-            return "😊 You're very welcome! Feel free to ask if you need any more synthesized insights."
-
-        if any(w in query_clean for w in ["bye", "goodbye", "see you", "cya"]):
-            return "👋 Goodbye! Have a great day!"
+            return "👋 **Hello!** I am ready to analyze patient feedback. Try sending a single keyword like 'wait' or 'cleanliness', or ask a specific question!"
 
         if not self.vectorizer or not self.llm:
-            return "I am currently initializing my analysis engine or missing API configurations. Please check your system settings."
+            return "System initializing or missing API configurations."
             
         try:
             context = self.retrieve_context(user_query, top_k=6)
@@ -116,20 +100,18 @@ class HospitalReviewBot:
             chain = self.prompt | self.llm
             response = chain.invoke({"context": context, "question": user_query})
             
-            answer = response.content if hasattr(response, "content") else str(response)
+            # STRICT FORMATTING FIX: Prevents raw JSON output
+            if hasattr(response, "content"):
+                answer = response.content
+            elif isinstance(response, list) and len(response) > 0:
+                answer = response[0].get("text", str(response))
+            elif isinstance(response, dict):
+                answer = response.get("text", str(response))
+            else:
+                answer = str(response)
+                
             return answer
             
         except Exception as e:
             logger.error(f"Inference Error: {str(e)}")
-            return "I am currently experiencing a temporary connection limit. Please try asking your question again in a moment!"
-
-if __name__ == "__main__":
-    bot = HospitalReviewBot(data_path="reviews.csv")
-    test_query = "What do patients say about wait times for tests?"
-    print(bot.get_response(test_query))
-
-    test_query = "How do patients rate the medical care?"
-    print(bot.get_response(test_query))
-
-    test_query = "Summarize general feedback regarding hospital cleanliness."
-    print(bot.get_response(test_query))
+            return "I am currently experiencing a connection limit. Please try asking your question again in a moment!"
