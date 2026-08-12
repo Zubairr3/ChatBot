@@ -27,14 +27,13 @@ def generate_response(user_message, history):
 # -----------------------------------------------------
 custom_css = """
 body, .gradio-container {
-    background-color: #050505 !important; /* Deepest black background */
+    background-color: #050505 !important;
     font-family: 'Helvetica Neue', Arial, sans-serif !important;
     color: #E5E7EB !important;
     max-width: 900px !important;
     margin: 0 auto !important;
 }
 
-/* Minimalist Header Panel */
 .header-panel {
     background: #0F0F0F !important;
     border: 1px solid #262626 !important;
@@ -51,14 +50,12 @@ body, .gradio-container {
     letter-spacing: 0.5px;
 }
 
-/* Accordion Box */
 .gr-accordion {
     background-color: #0F0F0F !important;
     border: 1px solid #262626 !important;
     border-radius: 6px !important;
 }
 
-/* Chatbot Container - HEIGHT REDUCED TO FIX SCROLLING */
 .chatbot-area {
     background: #0A0A0A !important;
     border: 1px solid #262626 !important;
@@ -68,24 +65,22 @@ body, .gradio-container {
     margin-bottom: 12px !important;
 }
 
-/* Classic Chat Bubbles */
 .message.user {
-    background: #262626 !important; /* Lighter charcoal for user */
+    background: #262626 !important;
     color: #FFFFFF !important;
     border-radius: 6px !important;
     border: none !important;
     padding: 12px 16px !important;
 }
 .message.bot {
-    background: #000000 !important; /* Pure black for bot */
-    color: #D1D5DB !important; /* Soft white text for visibility */
+    background: #000000 !important;
+    color: #D1D5DB !important;
     border: 1px solid #262626 !important;
     border-radius: 6px !important;
     padding: 12px 16px !important;
     line-height: 1.5 !important;
 }
 
-/* Input Box */
 .input-box {
     background: #0F0F0F !important;
     border: 1px solid #262626 !important;
@@ -101,7 +96,6 @@ body, .gradio-container {
     box-shadow: none !important;
 }
 
-/* Submit Button */
 .send-btn {
     background: #171717 !important;
     border: 1px solid #333333 !important;
@@ -133,40 +127,57 @@ theme = gr.themes.Monochrome(
     block_border_color="transparent"
 )
 
-with gr.Blocks(css=custom_css, theme=theme, title="Patient Feedback Analysis") as demo:
+with gr.Blocks(css=custom_css, theme=theme, title="Hospital Review Assistant") as demo:
     
     with gr.Column(elem_classes="header-panel"):
         gr.HTML("""
             <div style="display: flex; align-items: center; gap: 12px;">
                 <span style="font-size: 1.4rem;">🏥</span>
-                <h1 class='header-title'>Patient Feedback Analyst</h1>
+                <h1 class='header-title'>Hospital Review Assistant</h1>
             </div>
         """)
         
-        with gr.Accordion("System Instructions (Expand)", open=False):
+        with gr.Accordion("✨ What is this bot trained on? (Click to expand)", open=False):
             gr.Markdown("""
-            Enter a keyword (e.g., **"wait"**, **"clean"**) or a full question to instantly search and summarize patient feedback records.
+            This AI assistant is trained entirely on **real hospital patient reviews and feedback data**. 
+            
+            Instead of reading through hundreds of individual comments manually, you can simply ask this bot a question or provide a keyword, and it will instantly summarize answers regarding:
+            * ⏱️ **Wait Times:** How long patients wait for appointments or tests.
+            * 🩺 **Medical Care:** The quality of treatment and staff attentiveness.
+            * 🧼 **Cleanliness:** Room comfort and overall hospital hygiene.
+            * 💳 **Billing & Admin:** Administrative clarity and support.
             """)
 
     chat_history = gr.Chatbot(
         type="messages", 
         elem_classes="chatbot-area", 
         show_label=False,
-        avatar_images=(None, None) # Removed avatars for a cleaner, classic look
+        avatar_images=(None, None) 
     )
     
     with gr.Row():
         user_input = gr.Textbox(
-            placeholder="Type a keyword or question here...",
+            placeholder="Type a keyword (e.g. 'wait') or question here...",
             show_label=False,
             scale=8,
             elem_classes="input-box"
         )
         send_btn = gr.Button("Send", elem_classes="send-btn", scale=2)
 
+    gr.Examples(
+        examples=[
+            "wait",
+            "cleanliness",
+            "What do patients say about wait times for tests?",
+            "How do patients rate the medical care and staff behavior?"
+        ],
+        inputs=user_input
+    )
+
+    # THE UPDATED PORTFOLIO FOOTER
     gr.HTML("""
         <div class="footer-text">
-            Data Analysis Project • Built with Python & Scikit-Learn
+            AI Portfolio Project • Python | LangChain |AI Model Integration | Gradio
         </div>
     """)
 

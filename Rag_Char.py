@@ -41,13 +41,14 @@ class HospitalReviewBot:
             self.vectorizer = TfidfVectorizer(stop_words='english')
             self.tfidf_matrix = self.vectorizer.fit_transform(self.reviews)
 
+            # Stable endpoint to prevent timeouts
             self.llm = ChatGoogleGenerativeAI(
-                model="gemini-2.0-flash", 
-                temperature=0.1, # Lower temperature prevents hallucinations
+                model="gemini-3.6-flash", 
+                temperature=0.1, 
                 google_api_key=api_key
             )
 
-            # UPDATED PROMPT: Forces short bullet points and related questions
+            # STRICT PROMPT: Forces short bullet points and related questions
             self.prompt = ChatPromptTemplate.from_template(
                 "You are an expert Hospital Data Analyst.\n"
                 "Your objective is to provide a clear, factual summary of patient feedback based strictly on the provided context.\n\n"
@@ -100,7 +101,6 @@ class HospitalReviewBot:
             chain = self.prompt | self.llm
             response = chain.invoke({"context": context, "question": user_query})
             
-            # STRICT FORMATTING FIX: Prevents raw JSON output
             if hasattr(response, "content"):
                 answer = response.content
             elif isinstance(response, list) and len(response) > 0:
