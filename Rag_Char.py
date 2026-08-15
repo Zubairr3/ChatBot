@@ -41,7 +41,6 @@ class HospitalReviewBot:
             self.vectorizer = TfidfVectorizer(stop_words='english')
             self.tfidf_matrix = self.vectorizer.fit_transform(self.reviews)
 
-            # Stable endpoint to prevent timeouts
             self.llm = ChatGoogleGenerativeAI(
                 model="gemini-3.6-flash", 
                 temperature=0.1, 
@@ -101,16 +100,28 @@ class HospitalReviewBot:
             chain = self.prompt | self.llm
             response = chain.invoke({"context": context, "question": user_query})
             
+            # --- THE FIX: STRICT TEXT EXTRACTION ---
+            answer = ""
             if hasattr(response, "content"):
-                answer = response.content
-            elif isinstance(response, list) and len(response) > 0:
-                answer = response[0].get("text", str(response))
-            elif isinstance(response, dict):
-                answer = response.get("text", str(response))
+                content = response.content
+                if isinstance(content, str):
+                    # If it's already a clean string
+                    answer = content
+                elif isinstance(content, list):
+                    # If LangChain wraps it in a list of dicts (like in the screenshot)
+                    text_parts = []
+                    for item in content:
+                        if isinstance(item, dict) and 'text' in item:
+                            text_parts.append(item['text'])
+                        elif isinstance(item, str):
+                            text_parts.append(item)
+                    answer = "".join(text_parts)
+                else:
+                    answer = str(content)
             else:
                 answer = str(response)
                 
-            return answer
+            return answer.strip()
             
         except Exception as e:
             logger.error(f"Inference Error: {str(e)}")

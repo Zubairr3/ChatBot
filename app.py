@@ -8,22 +8,30 @@ bot = HospitalReviewBot()
 def dummy_gpu_pass():
     pass
 
-def generate_response(user_message, history):
+# --- IMPROVEMENT 1: Two-Step Snappy UI Logic ---
+def update_user_message(user_message, history):
+    """Instantly clears the input box and shows the user's message in the chat."""
     if history is None:
         history = []
-        
     if not user_message or not str(user_message).strip():
         return "", history
     
-    bot_reply = bot.get_response(str(user_message))
-    
     history.append({"role": "user", "content": str(user_message)})
-    history.append({"role": "assistant", "content": str(bot_reply)})
-    
     return "", history
 
+def generate_bot_response(history):
+    """Calls the AI model in the background and appends the response."""
+    if not history or history[-1]["role"] != "user":
+        return history
+    
+    user_message = history[-1]["content"]
+    bot_reply = bot.get_response(user_message)
+    
+    history.append({"role": "assistant", "content": bot_reply})
+    return history
+
 # -----------------------------------------------------
-# Classic Monochrome "Human-Made" CSS Theme
+# Classic Monochrome CSS Theme + UI Upgrades
 # -----------------------------------------------------
 custom_css = """
 body, .gradio-container {
@@ -32,6 +40,22 @@ body, .gradio-container {
     color: #E5E7EB !important;
     max-width: 900px !important;
     margin: 0 auto !important;
+}
+
+/* --- IMPROVEMENT 2: Custom Dark Scrollbars --- */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #050505; 
+}
+::-webkit-scrollbar-thumb {
+    background: #262626; 
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #404040; 
 }
 
 .header-panel {
@@ -60,7 +84,7 @@ body, .gradio-container {
     background: #0A0A0A !important;
     border: 1px solid #262626 !important;
     border-radius: 6px !important;
-    height: 400px !important; /* Fixed height forces input box up */
+    height: 400px !important; 
     max-height: 45vh !important;
     margin-bottom: 12px !important;
 }
@@ -86,10 +110,13 @@ body, .gradio-container {
     border: 1px solid #262626 !important;
     border-radius: 6px !important;
 }
+
+/* --- IMPROVEMENT 3: Lock Textbox Resizing --- */
 .input-box textarea {
     color: #FFFFFF !important;
     font-size: 1rem !important;
     padding: 12px !important;
+    resize: none !important; 
 }
 .input-box textarea:focus {
     border-color: #52525B !important;
@@ -174,22 +201,33 @@ with gr.Blocks(css=custom_css, theme=theme, title="Hospital Review Assistant") a
         inputs=user_input
     )
 
-    # THE UPDATED PORTFOLIO FOOTER
     gr.HTML("""
         <div class="footer-text">
-            AI Portfolio Project • Python | LangChain |AI Model Integration | Gradio
+            AI Portfolio Project • Python | LangChain | Generative LLMs | Gradio
         </div>
     """)
 
+    # --- ADVANCED EVENT ROUTING (Creates the snappy feel) ---
     send_btn.click(
-        fn=generate_response, 
+        fn=update_user_message, 
         inputs=[user_input, chat_history], 
-        outputs=[user_input, chat_history]
+        outputs=[user_input, chat_history],
+        queue=False # Forces instant UI update
+    ).then(
+        fn=generate_bot_response, 
+        inputs=[chat_history], 
+        outputs=[chat_history]
     )
+    
     user_input.submit(
-        fn=generate_response, 
+        fn=update_user_message, 
         inputs=[user_input, chat_history], 
-        outputs=[user_input, chat_history]
+        outputs=[user_input, chat_history],
+        queue=False # Forces instant UI update
+    ).then(
+        fn=generate_bot_response, 
+        inputs=[chat_history], 
+        outputs=[chat_history]
     )
 
 if __name__ == "__main__":
