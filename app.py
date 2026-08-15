@@ -8,7 +8,6 @@ bot = HospitalReviewBot()
 def dummy_gpu_pass():
     pass
 
-# --- IMPROVEMENT 1: Two-Step Snappy UI Logic ---
 def update_user_message(user_message, history):
     """Instantly clears the input box and shows the user's message in the chat."""
     if history is None:
@@ -31,116 +30,139 @@ def generate_bot_response(history):
     return history
 
 # -----------------------------------------------------
-# Classic Monochrome CSS Theme + UI Upgrades
+# Premium "Human-Designed" Charcoal CSS Theme
 # -----------------------------------------------------
 custom_css = """
+/* Base Background - Very dark, but not pure black for less eye strain */
 body, .gradio-container {
-    background-color: #050505 !important;
-    font-family: 'Helvetica Neue', Arial, sans-serif !important;
-    color: #E5E7EB !important;
+    background-color: #0d0d0d !important; 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+    color: #f3f4f6 !important;
     max-width: 900px !important;
     margin: 0 auto !important;
 }
 
-/* --- IMPROVEMENT 2: Custom Dark Scrollbars --- */
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-::-webkit-scrollbar-track {
-    background: #050505; 
-}
-::-webkit-scrollbar-thumb {
-    background: #262626; 
-    border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-    background: #404040; 
-}
-
+/* Header & Panels - Slightly raised slate color */
 .header-panel {
-    background: #0F0F0F !important;
+    background: #171717 !important;
     border: 1px solid #262626 !important;
-    border-radius: 6px !important;
-    padding: 16px 24px !important;
-    margin-bottom: 12px !important;
+    border-radius: 10px !important;
+    padding: 20px 24px !important;
+    margin-bottom: 16px !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5) !important;
 }
 
 .header-title {
-    color: #FFFFFF !important;
-    font-size: 1.4rem !important;
+    color: #ffffff !important;
+    font-size: 1.45rem !important;
     font-weight: 600 !important;
     margin: 0 !important;
-    letter-spacing: 0.5px;
+    letter-spacing: -0.01em !important;
 }
 
 .gr-accordion {
-    background-color: #0F0F0F !important;
+    background-color: #171717 !important;
     border: 1px solid #262626 !important;
-    border-radius: 6px !important;
+    border-radius: 8px !important;
+    color: #d1d5db !important;
 }
 
+/* Chat Area */
 .chatbot-area {
-    background: #0A0A0A !important;
+    background: #121212 !important; 
     border: 1px solid #262626 !important;
-    border-radius: 6px !important;
-    height: 400px !important; 
-    max-height: 45vh !important;
-    margin-bottom: 12px !important;
-}
-
-.message.user {
-    background: #262626 !important;
-    color: #FFFFFF !important;
-    border-radius: 6px !important;
-    border: none !important;
-    padding: 12px 16px !important;
-}
-.message.bot {
-    background: #000000 !important;
-    color: #D1D5DB !important;
-    border: 1px solid #262626 !important;
-    border-radius: 6px !important;
-    padding: 12px 16px !important;
-    line-height: 1.5 !important;
-}
-
-.input-box {
-    background: #0F0F0F !important;
-    border: 1px solid #262626 !important;
-    border-radius: 6px !important;
-}
-
-/* --- IMPROVEMENT 3: Lock Textbox Resizing --- */
-.input-box textarea {
-    color: #FFFFFF !important;
-    font-size: 1rem !important;
+    border-radius: 10px !important;
+    height: 420px !important; /* Fixed height prevents scrolling */
+    max-height: 50vh !important;
+    margin-bottom: 16px !important;
+    box-shadow: inset 0 2px 4px 0 rgba(0,0,0,0.2) !important;
     padding: 12px !important;
-    resize: none !important; 
-}
-.input-box textarea:focus {
-    border-color: #52525B !important;
-    box-shadow: none !important;
 }
 
-.send-btn {
+/* Chat Bubbles - Humanized asymmetrical shaping */
+.message.user {
+    background: #27272a !important; /* Distinct dark zinc color */
+    color: #ffffff !important;
+    border-radius: 14px 14px 4px 14px !important; /* iMessage style curve */
+    border: 1px solid #3f3f46 !important;
+    padding: 12px 16px !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+}
+
+.message.bot {
+    background: #171717 !important; 
+    color: #e5e5e5 !important;
+    border-radius: 14px 14px 14px 4px !important; /* iMessage style curve */
+    border: 1px solid #262626 !important;
+    padding: 14px 18px !important;
+    line-height: 1.6 !important; 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+}
+
+/* Forcing solid bullet points for readability */
+.message.bot ul {
+    list-style-type: disc !important;
+    padding-left: 20px !important;
+    margin-top: 8px !important;
+    margin-bottom: 8px !important;
+}
+.message.bot li {
+    margin-bottom: 6px !important;
+}
+
+/* Input box styling */
+.input-box {
     background: #171717 !important;
-    border: 1px solid #333333 !important;
-    color: #FFFFFF !important;
-    font-weight: 500 !important;
+    border: 1px solid #3f3f46 !important;
+    border-radius: 8px !important;
+    transition: border-color 0.2s ease !important;
+}
+.input-box:focus-within {
+    border-color: #71717a !important; 
+}
+.input-box textarea {
+    color: #ffffff !important;
     font-size: 1rem !important;
-    border-radius: 6px !important;
+    padding: 14px !important;
+    resize: none !important;
+}
+
+/* Tactile Send Button */
+.send-btn {
+    background: #27272a !important;
+    border: 1px solid #3f3f46 !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    border-radius: 8px !important;
     cursor: pointer !important;
-    transition: all 0.2s ease !important;
+    transition: background-color 0.2s ease, transform 0.1s ease !important;
     height: 100% !important;
 }
 .send-btn:hover {
-    background: #262626 !important;
+    background: #3f3f46 !important;
+}
+.send-btn:active {
+    transform: scale(0.96) !important; /* Physical push-down effect */
+}
+
+/* Sleek Scrollbars */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: #3f3f46;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #52525b;
 }
 
 .footer-text {
     text-align: center;
-    color: #737373;
+    color: #71717a;
     font-size: 0.85rem;
     margin-top: 15px;
 }
@@ -207,12 +229,11 @@ with gr.Blocks(css=custom_css, theme=theme, title="Hospital Review Assistant") a
         </div>
     """)
 
-    # --- ADVANCED EVENT ROUTING (Creates the snappy feel) ---
     send_btn.click(
         fn=update_user_message, 
         inputs=[user_input, chat_history], 
         outputs=[user_input, chat_history],
-        queue=False # Forces instant UI update
+        queue=False 
     ).then(
         fn=generate_bot_response, 
         inputs=[chat_history], 
@@ -223,7 +244,7 @@ with gr.Blocks(css=custom_css, theme=theme, title="Hospital Review Assistant") a
         fn=update_user_message, 
         inputs=[user_input, chat_history], 
         outputs=[user_input, chat_history],
-        queue=False # Forces instant UI update
+        queue=False 
     ).then(
         fn=generate_bot_response, 
         inputs=[chat_history], 
