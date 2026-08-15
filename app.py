@@ -9,7 +9,6 @@ def dummy_gpu_pass():
     pass
 
 def update_user_message(user_message, history):
-    """Instantly clears the input box and shows the user's message in the chat."""
     if history is None:
         history = []
     if not user_message or not str(user_message).strip():
@@ -19,7 +18,6 @@ def update_user_message(user_message, history):
     return "", history
 
 def generate_bot_response(history):
-    """Calls the AI model in the background and appends the response."""
     if not history or history[-1]["role"] != "user":
         return history
     
@@ -30,76 +28,84 @@ def generate_bot_response(history):
     return history
 
 # -----------------------------------------------------
-# Premium "Human-Designed" Charcoal CSS Theme
+# Modern Clinical Light Mode CSS (Ocean Teal Accents)
 # -----------------------------------------------------
 custom_css = """
-/* Base Background - Very dark, but not pure black for less eye strain */
+/* Soft Off-White Background */
 body, .gradio-container {
-    background-color: #0d0d0d !important; 
+    background-color: #F8FAFC !important;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
-    color: #f3f4f6 !important;
-    max-width: 900px !important;
+    color: #0f172a !important; 
+    max-width: 950px !important;
     margin: 0 auto !important;
+    padding: 20px 10px !important;
 }
 
-/* Header & Panels - Slightly raised slate color */
+/* Pure White Cards with subtle borders */
 .header-panel {
-    background: #171717 !important;
-    border: 1px solid #262626 !important;
-    border-radius: 10px !important;
+    background: #FFFFFF !important;
+    border: 1px solid #E2E8F0 !important;
+    border-radius: 12px !important;
     padding: 20px 24px !important;
     margin-bottom: 16px !important;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5) !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
 }
 
 .header-title {
-    color: #ffffff !important;
-    font-size: 1.45rem !important;
-    font-weight: 600 !important;
+    color: #0f172a !important;
+    font-size: 1.6rem !important;
+    font-weight: 700 !important;
     margin: 0 !important;
-    letter-spacing: -0.01em !important;
+    letter-spacing: -0.02em !important;
 }
 
+.header-subtitle {
+    color: #64748b !important;
+    font-size: 0.95rem !important;
+    margin-top: 6px !important;
+    margin-bottom: 0 !important;
+}
+
+/* Distinct Accordion with Contrast */
 .gr-accordion {
-    background-color: #171717 !important;
-    border: 1px solid #262626 !important;
+    background-color: #F1F5F9 !important; /* Differentiates from the pure white background */
+    border: 1px solid #CBD5E1 !important;
     border-radius: 8px !important;
-    color: #d1d5db !important;
+    color: #334155 !important;
 }
 
-/* Chat Area */
+/* Chat Canvas */
 .chatbot-area {
-    background: #121212 !important; 
-    border: 1px solid #262626 !important;
-    border-radius: 10px !important;
-    height: 420px !important; /* Fixed height prevents scrolling */
-    max-height: 50vh !important;
+    background: #FFFFFF !important; 
+    border: 1px solid #E2E8F0 !important;
+    border-radius: 12px !important;
     margin-bottom: 16px !important;
-    box-shadow: inset 0 2px 4px 0 rgba(0,0,0,0.2) !important;
-    padding: 12px !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+    padding: 16px !important;
 }
 
-/* Chat Bubbles - Humanized asymmetrical shaping */
+/* Chat Bubbles - Ocean Teal for User */
 .message.user {
-    background: #27272a !important; /* Distinct dark zinc color */
-    color: #ffffff !important;
-    border-radius: 14px 14px 4px 14px !important; /* iMessage style curve */
-    border: 1px solid #3f3f46 !important;
-    padding: 12px 16px !important;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+    background: #0284C7 !important; /* Trustworthy Ocean Teal */
+    color: #ffffff !important; 
+    border-radius: 14px 14px 4px 14px !important;
+    border: none !important;
+    padding: 12px 18px !important;
+    font-size: 0.95rem !important;
+    box-shadow: 0 2px 4px rgba(2, 132, 199, 0.2) !important;
 }
 
+/* Chat Bubbles - Soft Light Grey for Bot */
 .message.bot {
-    background: #171717 !important; 
-    color: #e5e5e5 !important;
-    border-radius: 14px 14px 14px 4px !important; /* iMessage style curve */
-    border: 1px solid #262626 !important;
-    padding: 14px 18px !important;
+    background: #F8FAFC !important; 
+    color: #0f172a !important; 
+    border-radius: 14px 14px 14px 4px !important;
+    border: 1px solid #E2E8F0 !important;
+    padding: 16px 20px !important;
+    font-size: 0.95rem !important;
     line-height: 1.6 !important; 
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
 }
 
-/* Forcing solid bullet points for readability */
 .message.bot ul {
     list-style-type: disc !important;
     padding-left: 20px !important;
@@ -110,67 +116,71 @@ body, .gradio-container {
     margin-bottom: 6px !important;
 }
 
-/* Input box styling */
+/* Floating Input Box Container */
 .input-box {
-    background: #171717 !important;
-    border: 1px solid #3f3f46 !important;
-    border-radius: 8px !important;
-    transition: border-color 0.2s ease !important;
+    background: #FFFFFF !important;
+    border: 1px solid #E2E8F0 !important;
+    border-radius: 12px !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
 }
 .input-box:focus-within {
-    border-color: #71717a !important; 
+    border-color: #0284C7 !important; 
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.2) !important;
 }
 .input-box textarea {
-    color: #ffffff !important;
+    color: #0f172a !important; 
     font-size: 1rem !important;
     padding: 14px !important;
     resize: none !important;
 }
 
-/* Tactile Send Button */
+/* Primary Ocean Teal Send Button */
 .send-btn {
-    background: #27272a !important;
-    border: 1px solid #3f3f46 !important;
+    background: #0284C7 !important;
+    border: none !important;
     color: #ffffff !important;
     font-weight: 600 !important;
-    border-radius: 8px !important;
+    border-radius: 12px !important;
     cursor: pointer !important;
-    transition: background-color 0.2s ease, transform 0.1s ease !important;
+    transition: all 0.2s ease !important;
     height: 100% !important;
+    box-shadow: 0 2px 4px rgba(2, 132, 199, 0.2) !important;
 }
 .send-btn:hover {
-    background: #3f3f46 !important;
+    background: #0369a1 !important; /* Darkens slightly on hover */
 }
 .send-btn:active {
-    transform: scale(0.96) !important; /* Physical push-down effect */
+    transform: scale(0.97) !important;
 }
 
-/* Sleek Scrollbars */
+/* Custom Clean Scrollbars */
 ::-webkit-scrollbar {
-    width: 8px;
+    width: 6px;
 }
 ::-webkit-scrollbar-track {
     background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-    background: #3f3f46;
-    border-radius: 4px;
+    background: #CBD5E1;
+    border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-    background: #52525b;
+    background: #94A3B8;
 }
 
 .footer-text {
     text-align: center;
-    color: #71717a;
+    color: #64748b;
     font-size: 0.85rem;
-    margin-top: 15px;
+    margin-top: 20px;
 }
 """
 
-theme = gr.themes.Monochrome(
-    primary_hue="neutral",
-    neutral_hue="neutral"
+# Implementing the requested Gradio Soft Theme
+theme = gr.themes.Soft(
+    primary_hue=gr.themes.colors.sky,
+    neutral_hue=gr.themes.colors.slate,
 ).set(
     block_background_fill="transparent",
     block_border_color="transparent"
@@ -180,13 +190,18 @@ with gr.Blocks(css=custom_css, theme=theme, title="Hospital Review Assistant") a
     
     with gr.Column(elem_classes="header-panel"):
         gr.HTML("""
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <span style="font-size: 1.4rem;">🏥</span>
-                <h1 class='header-title'>Hospital Review Assistant</h1>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="font-size: 1.6rem;">🏥</span>
+                    <h1 class='header-title'>Hospital Review Assistant</h1>
+                </div>
+                <!-- FIXED: 1-Line Info Subtitle directly under the main title -->
+                <p class='header-subtitle'>Powered by patient review records covering wait times, care quality, and facility ratings.</p>
             </div>
         """)
         
-        with gr.Accordion("✨ What is this bot trained on? (Click to expand)", open=False):
+        # FIXED: Better contrast on the accordion to separate it from pure white background
+        with gr.Accordion("📌 What is this bot trained on? (Click to expand)", open=False):
             gr.Markdown("""
             This AI assistant is trained entirely on **real hospital patient reviews and feedback data**. 
             
@@ -197,11 +212,18 @@ with gr.Blocks(css=custom_css, theme=theme, title="Hospital Review Assistant") a
             * 💳 **Billing & Admin:** Administrative clarity and support.
             """)
 
+    # FIXED: Added default greeting message and set fixed height to 450
+    initial_message = [
+        {"role": "assistant", "content": "👋 Hello! I can help you analyze hospital reviews. Ask me about wait times, staff quality, or search by keywords."}
+    ]
+    
     chat_history = gr.Chatbot(
+        value=initial_message,
         type="messages", 
         elem_classes="chatbot-area", 
         show_label=False,
-        avatar_images=(None, None) 
+        avatar_images=(None, None),
+        height=450  
     )
     
     with gr.Row():
@@ -213,12 +235,12 @@ with gr.Blocks(css=custom_css, theme=theme, title="Hospital Review Assistant") a
         )
         send_btn = gr.Button("Send", elem_classes="send-btn", scale=2)
 
+    # FIXED: Replaced generic examples with highly actionable, clickable user queries
     gr.Examples(
         examples=[
-            "wait",
-            "cleanliness",
-            "What do patients say about wait times for tests?",
-            "How do patients rate the medical care and staff behavior?"
+            "What do patients say about emergency room wait times?",
+            "Summarize overall feedback on doctor communication.",
+            "List common complaints regarding billing."
         ],
         inputs=user_input
     )
@@ -229,6 +251,7 @@ with gr.Blocks(css=custom_css, theme=theme, title="Hospital Review Assistant") a
         </div>
     """)
 
+    # Click Handlers
     send_btn.click(
         fn=update_user_message, 
         inputs=[user_input, chat_history], 
