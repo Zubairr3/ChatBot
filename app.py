@@ -10,21 +10,17 @@ bot = HospitalReviewBot()
 def dummy_gpu_pass():
     pass
 
-# FIX 4: Prevent empty bubbles and duplicate triggers
 def update_user_message(user_message, history):
     if history is None:
         history = []
     
-    # If the user clicks send with an empty box, do absolutely nothing.
     if not user_message or not str(user_message).strip():
         return user_message, history
     
-    # Otherwise, append the user's message
     history.append({"role": "user", "content": str(user_message).strip()})
     return "", history
 
 def generate_bot_response(history):
-    # Only generate a response if the very last message was actually from the user
     if not history or history[-1]["role"] != "user":
         return history
     
@@ -34,7 +30,6 @@ def generate_bot_response(history):
     greetings = ["hi", "hello", "hey", "greetings", "good morning", "good afternoon", "good evening"]
     farewells = ["bye", "goodbye", "thanks", "thank you", "ok", "okay", "good", "great", "awesome", "perfect", "thankyou"]
     
-    # FIX 5: Varied, dynamic responses for greetings and farewells
     if clean_msg in greetings or (len(clean_msg.split()) <= 2 and any(g in clean_msg for g in greetings)):
         bot_reply = random.choice([
             "👋 Hello! I am the Hospital Review Assistant. Ask me anything about the hospital's wait times, staff quality, or cleanliness.",
@@ -49,23 +44,22 @@ def generate_bot_response(history):
             "Glad I could assist! Have a wonderful day!"
         ])
     else:
-        # If it's a real query, pass it to your AI model
         bot_reply = bot.get_response(user_message)
     
     history.append({"role": "assistant", "content": bot_reply})
     return history
 
 # -----------------------------------------------------
-# Safe, Non-Destructive CSS
+# UI Polish & Safe CSS
 # -----------------------------------------------------
 custom_css = """
 .gradio-container {
     max-width: 950px !important;
     margin: auto !important;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+    /* FIX: Added crisp system font stack for modern UI lettering */
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
 }
 
-/* FIX 1: Force Title to Pure White for Dark Mode */
 .header-title {
     color: #FFFFFF !important;
 }
@@ -73,13 +67,34 @@ custom_css = """
     color: #94A3B8 !important;
 }
 
-/* Ensure text doesn't vanish while processing */
 .message-wrap.generating {
     opacity: 1 !important;
 }
+
+/* FIX: Interactive Example Button Styling */
+.quick-prompts button {
+    border: 1px solid #334155 !important;
+    border-radius: 8px !important;
+    background-color: transparent !important;
+    transition: all 0.2s ease-in-out !important;
+}
+.quick-prompts button:hover {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    border-color: #64748B !important;
+}
+
+/* FIX: Muted Footer Badge Styling */
+.footer-badge {
+    text-align: center;
+    color: #64748B;
+    font-size: 0.85rem;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid #334155;
+    background: transparent !important;
+}
 """
 
-# FIX 2: Let Gradio's native theme handle the chat bubbles perfectly
 theme = gr.themes.Soft(
     primary_hue="sky",
     neutral_hue="slate"
@@ -110,13 +125,13 @@ with gr.Blocks(css=custom_css, theme=theme, title="Hospital Review Assistant") a
         *This ensures you get honest, fact-based answers based on real patient experiences, without the AI making anything up.*
         """)
 
-    # FIX 3: Increased height to 500 and ensured autoscroll is natively handled
+    # FIX: Reduced height to 380px to fix viewport overflow and prevent scrolling
     chat_history = gr.Chatbot(
         value=[{"role": "assistant", "content": "👋 Hello! I am the Hospital Review Assistant. Ask me anything about the hospital's wait times, staff quality, or cleanliness."}],
         type="messages", 
         show_label=False,
         avatar_images=(None, None),
-        height=500,
+        height=380,
         autoscroll=True
     )
     
@@ -131,17 +146,21 @@ with gr.Blocks(css=custom_css, theme=theme, title="Hospital Review Assistant") a
         )
         send_btn = gr.Button("Send", variant="primary", scale=2)
 
+    # FIX: Modernized Label & Element Classes
     gr.Examples(
         examples=[
             "What do patients say about emergency room wait times?",
             "Summarize overall feedback on doctor communication.",
             "List common complaints regarding billing."
         ],
-        inputs=user_input
+        inputs=user_input,
+        label="⚡ Quick Prompts",
+        elem_classes="quick-prompts"
     )
 
+    # FIX: Clean, Bordered Footer Badge
     gr.HTML("""
-        <div style="text-align: center; color: #64748B; font-size: 0.85rem; margin-top: 30px; margin-bottom: 20px;">
+        <div class="footer-badge">
             AI Portfolio Project • Built with Python, Gradio & Generative AI
         </div>
     """)
