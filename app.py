@@ -4,6 +4,10 @@ from Rag_Char import HospitalReviewBot
 
 bot = HospitalReviewBot()
 
+@spaces.GPU
+def dummy_gpu_pass():
+    pass
+
 
 
 def update_user_message(user_message, history):
