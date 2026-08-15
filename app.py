@@ -56,7 +56,6 @@ custom_css = """
 .gradio-container {
     max-width: 950px !important;
     margin: auto !important;
-    /* FIX: Added crisp system font stack for modern UI lettering */
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
 }
 
@@ -71,19 +70,19 @@ custom_css = """
     opacity: 1 !important;
 }
 
-/* FIX: Interactive Example Button Styling */
-.quick-prompts button {
+/* FIX: Interactive Example Button Styling (Using ID instead of Class) */
+#quick-prompts button {
     border: 1px solid #334155 !important;
     border-radius: 8px !important;
     background-color: transparent !important;
     transition: all 0.2s ease-in-out !important;
 }
-.quick-prompts button:hover {
+#quick-prompts button:hover {
     background-color: rgba(255, 255, 255, 0.05) !important;
     border-color: #64748B !important;
 }
 
-/* FIX: Muted Footer Badge Styling */
+/* Muted Footer Badge Styling */
 .footer-badge {
     text-align: center;
     color: #64748B;
@@ -125,7 +124,6 @@ with gr.Blocks(css=custom_css, theme=theme, title="Hospital Review Assistant") a
         *This ensures you get honest, fact-based answers based on real patient experiences, without the AI making anything up.*
         """)
 
-    # FIX: Reduced height to 380px to fix viewport overflow and prevent scrolling
     chat_history = gr.Chatbot(
         value=[{"role": "assistant", "content": "👋 Hello! I am the Hospital Review Assistant. Ask me anything about the hospital's wait times, staff quality, or cleanliness."}],
         type="messages", 
@@ -146,7 +144,7 @@ with gr.Blocks(css=custom_css, theme=theme, title="Hospital Review Assistant") a
         )
         send_btn = gr.Button("Send", variant="primary", scale=2)
 
-    # FIX: Modernized Label & Element Classes
+    # FIX: Changed 'elem_classes' to 'elem_id' to satisfy Gradio's internal rules
     gr.Examples(
         examples=[
             "What do patients say about emergency room wait times?",
@@ -155,10 +153,9 @@ with gr.Blocks(css=custom_css, theme=theme, title="Hospital Review Assistant") a
         ],
         inputs=user_input,
         label="⚡ Quick Prompts",
-        elem_classes="quick-prompts"
+        elem_id="quick-prompts"
     )
 
-    # FIX: Clean, Bordered Footer Badge
     gr.HTML("""
         <div class="footer-badge">
             AI Portfolio Project • Built with Python, Gradio & Generative AI
