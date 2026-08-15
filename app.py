@@ -1,5 +1,6 @@
 import gradio as gr
 import spaces
+import re
 from Rag_Char import HospitalReviewBot
 
 bot = HospitalReviewBot()
@@ -17,21 +18,37 @@ def update_user_message(user_message, history):
     history.append({"role": "user", "content": str(user_message)})
     return "", history
 
+# FIX 5: Greeting Interceptor
 def generate_bot_response(history):
     if not history or history[-1]["role"] != "user":
         return history
     
-    user_message = history[-1]["content"]
-    bot_reply = bot.get_response(user_message)
+    user_message = str(history[-1]["content"])
+    
+    # Clean the input to just lowercase letters and spaces to check for greetings
+    clean_msg = re.sub(r'[^a-z0-9\s]', '', user_message.strip().lower())
+    
+    # Define conversational interceptors
+    greetings = ["hi", "hello", "hey", "greetings", "good morning", "good afternoon", "good evening"]
+    farewells = ["bye", "goodbye", "thanks", "thank you", "ok", "okay", "good", "great", "awesome", "perfect"]
+    
+    # Intercept conversational words before they hit the RAG database
+    if clean_msg in greetings:
+        bot_reply = "👋 Hello! I am the Hospital Review Assistant. Ask me anything about the hospital's wait times, staff quality, or cleanliness."
+    elif clean_msg in farewells:
+        bot_reply = "You're welcome! If you need to analyze any more patient feedback, I'm right here. Have a great day! 😊"
+    else:
+        # If it's a real question, pass it to your RAG pipeline
+        bot_reply = bot.get_response(user_message)
     
     history.append({"role": "assistant", "content": bot_reply})
     return history
 
 # -----------------------------------------------------
-# Modern Clinical Light Mode CSS (Forced Unified Theme)
+# Modern Clinical Light Mode CSS 
 # -----------------------------------------------------
 custom_css = """
-/* FIX 1: Override Dark Mode Variables to Prevent Theme Fragmentation */
+/* Override Dark Mode Variables */
 :root, .dark, body, .gradio-container {
     --background-fill-primary: #FFFFFF !important;
     --background-fill-secondary: #F8FAFC !important;
@@ -47,11 +64,11 @@ custom_css = """
     color: #0F172A !important;
 }
 
-/* Container Sizing */
+/* FIX 3: Container Sizing & Bottom Margin */
 .gradio-container {
     max-width: 950px !important;
     margin: 0 auto !important;
-    padding: 20px 10px !important;
+    padding: 20px 10px 80px 10px !important; /* Added 80px bottom padding to prevent clipping */
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
 }
 
@@ -88,7 +105,7 @@ custom_css = """
     color: #334155 !important;
 }
 
-/* FIX 2: Unified Chat Canvas (Removes the Pitch Navy) */
+/* Unified Chat Canvas */
 .chatbot-area, .chatbot-area > div, .chatbot-area .bubble-wrap {
     background: #FFFFFF !important; 
     border-color: transparent !important;
@@ -101,7 +118,15 @@ custom_css = """
     padding: 16px !important;
 }
 
-/* FIX 3: Bot Bubble Text Invisibility */
+/* Prevent Chat Bubbles from Disappearing During 'Processing' State */
+.message-wrap.generating {
+    opacity: 1 !important; 
+}
+.message-wrap.generating .message {
+    opacity: 0.7 !important; 
+}
+
+/* Bot Bubble Text */
 .message.bot {
     background: #F1F5F9 !important; 
     border: 1px solid #E2E8F0 !important;
@@ -110,19 +135,14 @@ custom_css = """
     font-size: 0.95rem !important;
     line-height: 1.6 !important; 
 }
-/* Force all text inside the bot bubble to be high-contrast dark navy */
 .message.bot p, .message.bot span, .message.bot li, .message.bot {
     color: #0F172A !important; 
 }
 
-.message.bot ul {
-    list-style-type: disc !important;
-    padding-left: 20px !important;
-    margin-top: 8px !important;
-    margin-bottom: 8px !important;
-}
-.message.bot li {
-    margin-bottom: 6px !important;
+/* FIX 1: Hide the action buttons (copy/share) on user messages to prevent white box artifacts */
+.message.user .button-wrap, .message.user button, .message.user .message-buttons {
+    display: none !important;
+    visibility: hidden !important;
 }
 
 /* User Bubbles - Ocean Teal */
@@ -138,7 +158,7 @@ custom_css = """
     color: #FFFFFF !important; 
 }
 
-/* FIX 4: Streamlined Input Box Container */
+/* Streamlined Input Box Container */
 .input-box {
     background: #FFFFFF !important;
     border: 1px solid #CBD5E1 !important;
@@ -180,7 +200,7 @@ custom_css = """
     transform: scale(0.97) !important;
 }
 
-/* FIX 5: Improve "Examples" Label Contrast */
+/* Improve "Examples" Label Contrast */
 [data-testid="block-info"], .label, .label-text, .gr-sample-label, .svelte-1b6s6s {
     color: #334155 !important; 
     font-weight: 700 !important;
@@ -231,15 +251,15 @@ with gr.Blocks(css=custom_css, theme=theme, title="Hospital Review Assistant") a
             </div>
         """)
         
-        with gr.Accordion("📌 What is this bot trained on? (Click to expand)", open=False):
+        # FIX 2: Reduce Redundancy and show off architecture metadata
+        with gr.Accordion("📊 Dataset & Model Details (Click to expand)", open=False):
             gr.Markdown("""
-            This AI assistant is trained entirely on **real hospital patient reviews and feedback data**. 
+            * **AI Model:** Google Gemini API 
+            * **Architecture:** Retrieval-Augmented Generation (RAG)
+            * **Retrieval Engine:** Scikit-Learn TF-IDF (In-Memory Sparse Vectorization)
+            * **Dataset:** 1,000+ real hospital patient review records
             
-            Instead of reading through hundreds of individual comments manually, you can simply ask this bot a question or provide a keyword, and it will instantly summarize answers regarding:
-            * ⏱️ **Wait Times:** How long patients wait for appointments or tests.
-            * 🩺 **Medical Care:** The quality of treatment and staff attentiveness.
-            * 🧼 **Cleanliness:** Room comfort and overall hospital hygiene.
-            * 💳 **Billing & Admin:** Administrative clarity and support.
+            This application bypasses heavy vector databases by using a fast, local sparse retrieval system. It searches the dataset based on your keywords and securely passes the most relevant records to the LLM to synthesize an accurate, fact-based response without hallucinating.
             """)
 
     initial_message = [
@@ -255,8 +275,10 @@ with gr.Blocks(css=custom_css, theme=theme, title="Hospital Review Assistant") a
         height=450  
     )
     
+    # FIX 4: Follow-up Question Affordance Tip
+    gr.HTML("<p style='font-size: 0.85rem; color: #64748B; margin-left: 5px; margin-bottom: 6px;'>💡 <b>Tip:</b> Copy any <i>Related Question</i> from the chat and paste it below.</p>")
+    
     with gr.Row():
-        # container=False applied here to remove the double-border shell
         user_input = gr.Textbox(
             placeholder="Type a keyword (e.g. 'wait') or question here...",
             show_label=False,
